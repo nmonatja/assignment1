@@ -21,9 +21,15 @@ public class TemperatureFilter extends FilterFramework
     {
 
 
-		int bytesread = 0;					// Number of bytes read from the input file.
-		int byteswritten = 0;				// Number of bytes written to the stream.
-		byte databyte = 0;					// The byte of data read from the file
+		int bytesread = 0;				// Number of bytes read from the input file.
+		int byteswritten = 0;			// Number of bytes written to the stream.
+		byte databyte = 0;				// The byte of data read from the file
+		
+		int MeasurementLength = 8;		// This is the length of all measurements (including time) in bytes
+		int IdLength = 4;				// This is the length of IDs in the byte stream
+		long measurement;				// This is the word used to store all measurements - conversions are illustrated.
+		int id;							// This is the measurement id
+		int i;							// This is a loop counter
 
 		// Next we write a message to the terminal to let the world know we are alive...
 
@@ -31,17 +37,6 @@ public class TemperatureFilter extends FilterFramework
 
 		while (true)
 		{
-			/*************************************************************
-			*	Here we read a byte and write a byte
-			*************************************************************/
-
-			int MeasurementLength = 8;		// This is the length of all measurements (including time) in bytes
-			int IdLength = 4;				// This is the length of IDs in the byte stream
-
-			long measurement;				// This is the word used to store all measurements - conversions are illustrated.
-			int id;							// This is the measurement id
-			int i;							// This is a loop counter
-
 
 			try
 			{
@@ -51,6 +46,7 @@ public class TemperatureFilter extends FilterFramework
 				//byteswritten++;
 				
 				/*  First, grab the id and be sure to write it out to the stream */
+				/* We know id is always first */
 				
 				id = 0;
 
@@ -58,7 +54,7 @@ public class TemperatureFilter extends FilterFramework
 				{
 					databyte = ReadFilterInputPort();	// This is where we read the byte from the stream...
 
-					id = id | (databyte1 & 0xFF);		// We append the byte on to ID...
+					id = id | (databyte & 0xFF);		// We append the byte on to ID...
 
 					if (i != IdLength-1)				// If this is not the last byte, then slide the
 					{									// previously appended byte to the left by one byte
@@ -80,6 +76,8 @@ public class TemperatureFilter extends FilterFramework
 				
 				if ( id == 4 )
 				{
+					// first, read the measurement
+					
 					for (i=0; i<MeasurementLength; i++ )
 					{
 						databyte = ReadFilterInputPort();
@@ -94,6 +92,33 @@ public class TemperatureFilter extends FilterFramework
 						bytesread++;									// Increment the byte count
 
 					} 
+					
+					// now let's transform the measurement
+					
+					// the sample code indicates that all measurements are of Double type so we need to convert 
+					// the Long into a Double to make sure we have the right number
+					Double tempF = Double.longBitsToDouble(measurement);
+					Double tempC = ((tempF - 32)*5)/9;
+					
+					// I checked the values for tempF against what Sample1 printed - they are the same
+					// I spot-checked the values for tempC by picking a few tempF and converting them via Google - the calculations are correct
+					// TODO: Comment this out when we're actually done with SystemA and it's all working
+					//System.out.print("\nOriginal (F): "+ tempF+" Converted (C): "+tempC);
+					
+					// now we write out the transformed measurement to the datastream
+					// Converting tempC back into a long will cause us to loose some precision, 
+					// but I think it needs to be done to write it out properly to the stream
+					// fun fact: a long is ALWAYS 8 bytes in Java so that's why its okay to hard-code it
+					
+					long output = Double.doubleToRawLongBits(tempC); 
+					System.out.print("\nOriginal (F): "+ tempF+" Converted (C): "+tempC+" Long: "+output);
+					
+					for (i = 7; i >= 0; i--) {
+				        WriteFilterOutputPort((byte)(output & 0xFF));
+						byteswritten++;
+				        output >>= 8;
+					}
+					
 				}
 				else
 				{
@@ -114,7 +139,7 @@ public class TemperatureFilter extends FilterFramework
 			catch (EndOfStreamException e)
 			{
 				ClosePorts();
-				System.out.print( "\n" + this.getName() + "::Middle Exiting; bytes read: " + bytesread + " bytes written: " + byteswritten );
+				System.out.print( "\n" + this.getName() + "::Temperature Exiting; bytes read: " + bytesread + " bytes written: " + byteswritten );
 				break;
 
 			} // catch
@@ -123,4 +148,4 @@ public class TemperatureFilter extends FilterFramework
 
    } // run
 
-} // MiddleFilter
+} // TemperatureFilter
