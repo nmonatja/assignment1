@@ -28,7 +28,8 @@ public class Plumber
 
 		SourceFilter Filter1 = new SourceFilter();
 		TemperatureFilter Filter2 = new TemperatureFilter();
-		SinkFilter Filter3 = new SinkFilter();
+		AltitudeFilter Filter3 = new AltitudeFilter();
+		SinkFilter Filter4 = new SinkFilter();
 
 		/****************************************************************************
 		* Here we connect the filters starting with the sink filter (Filter 1) which
@@ -36,6 +37,7 @@ public class Plumber
 		* source filter (Filter3).
 		****************************************************************************/
 
+		Filter4.Connect(Filter3);
 		Filter3.Connect(Filter2); // This esstially says, "connect Filter3 input port to Filter2 output port
 		Filter2.Connect(Filter1); // This esstially says, "connect Filter2 intput port to Filter1 output port
 
@@ -46,6 +48,7 @@ public class Plumber
 		Filter1.start();
 		Filter2.start();
 		Filter3.start();
+		Filter4.start();
 
    } // main
 
