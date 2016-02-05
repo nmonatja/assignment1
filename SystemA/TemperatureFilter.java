@@ -15,6 +15,8 @@
 *
 ******************************************************************************************************************/
 
+import java.nio.ByteBuffer;
+
 public class TemperatureFilter extends FilterFramework
 {
 	public void run()
@@ -30,6 +32,7 @@ public class TemperatureFilter extends FilterFramework
 		long measurement;				// This is the word used to store all measurements - conversions are illustrated.
 		int id;							// This is the measurement id
 		int i;							// This is a loop counter
+		ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES); ;				// used to write out transformed measurement
 
 		// Next we write a message to the terminal to let the world know we are alive...
 
@@ -102,21 +105,23 @@ public class TemperatureFilter extends FilterFramework
 					
 					// I checked the values for tempF against what Sample1 printed - they are the same
 					// I spot-checked the values for tempC by picking a few tempF and converting them via Google - the calculations are correct
-					// TODO: Comment this out when we're actually done with SystemA and it's all working
-					//System.out.print("\nOriginal (F): "+ tempF+" Converted (C): "+tempC);
+					// uncomment the following line if you want to take a look at this....
+					// System.out.print("\nOriginal (F): "+ tempF+" Converted (C): "+tempC);
 					
 					// now we write out the transformed measurement to the datastream
 					// Converting tempC back into a long will cause us to loose some precision, 
 					// but I think it needs to be done to write it out properly to the stream
-					// fun fact: a long is ALWAYS 8 bytes in Java so that's why its okay to hard-code it
+					// fun fact: a long is ALWAYS 8 bytes in Java 
 					
 					long output = Double.doubleToRawLongBits(tempC); 
-					System.out.print("\nOriginal (F): "+ tempF+" Converted (C): "+tempC+" Long: "+output);
 					
-					for (i = 7; i >= 0; i--) {
-				        WriteFilterOutputPort((byte)(output & 0xFF));
+						
+					buffer.putLong(0, output);
+					byte[] bufferArray = buffer.array();
+					for (i=0; i<bufferArray.length; i++)
+					{
+						WriteFilterOutputPort(bufferArray[i]);
 						byteswritten++;
-				        output >>= 8;
 					}
 					
 				}
