@@ -1,5 +1,5 @@
 /******************************************************************************************************************
-* File:SinkFilter.java
+* File:SinkFilter.java    ivan was here
 * Course: 17655
 * Project: Assignment 1
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
