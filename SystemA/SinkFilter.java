@@ -28,7 +28,8 @@ import java.text.SimpleDateFormat;		// This class is used to format and write ti
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-
+import java.text.NumberFormat;
+import java.text.DecimalFormat;
 
 public class SinkFilter extends FilterFramework
 {
@@ -41,7 +42,8 @@ public class SinkFilter extends FilterFramework
 		*************************************************************************************/
 
 		Calendar TimeStamp = Calendar.getInstance();
-		SimpleDateFormat TimeStampFormat = new SimpleDateFormat("YYYY:DD:HH:MM:SS");
+		SimpleDateFormat TimeStampFormat = new SimpleDateFormat("YYYY:MM:dd:HH:mm:ss"); //this is not what's in the instructions, but I think it's what is really desired.
+		NumberFormat formatter = new DecimalFormat("#0.00000");  // we only want the number to 5 decimal points
 
 		int MeasurementLength = 8;		// This is the length of all measurements (including time) in bytes
 		int IdLength = 4;				// This is the length of IDs in the byte stream
@@ -65,7 +67,7 @@ public class SinkFilter extends FilterFramework
 
 			System.out.print( "\n" + this.getName() + "::Sink Reading ");
 		
-			writer.write("Time:\t\t\t\t\tTemperature(C):\t\t\tAltitude (m):");
+			writer.write("Time:\t\t\t\t\tTemperature(C):\t\tAltitude (m):");
 			writer.newLine();
 			writer.write("----------------------------------------------------------------------------");
 			writer.newLine();
@@ -165,8 +167,10 @@ public class SinkFilter extends FilterFramework
 					{
 						//System.out.print( TimeStampFormat.format(TimeStamp.getTime()) + " ID = " + id + " " + Double.longBitsToDouble(measurement));
 						// print out the file 
-						// not 100% happy with this formatting yet
-						writer.write(TimeStampFormat.format(TimeStamp.getTime())+"\t\t"+Double.longBitsToDouble(measurement)+"\t\t"+Double.longBitsToDouble(alt));
+						
+						writer.write(TimeStampFormat.format(TimeStamp.getTime())+"\t\t"
+							+ formatter.format(Double.longBitsToDouble(measurement))+"\t\t\t"
+							+ formatter.format(Double.longBitsToDouble(alt)));
 						writer.newLine();
 
 					} // if
