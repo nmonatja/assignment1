@@ -5,6 +5,7 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
+*       1.1 Feb,07,2016 - Modified to read from each input filter and write to corresponding sink
 *
 * Description:
 *
@@ -23,11 +24,19 @@
 * Internal Methods: None
 *
 ******************************************************************************************************************/
-import java.util.*;						// This class is used to interpret time words
-import java.text.SimpleDateFormat;		// This class is used to format and write time in a string format.
+import java.io.*; // note we must add this here since we use BufferedReader class to read from the keyboard
+
 
 public class SinkFilter extends FilterFramework
 {
+    private String SinkFileName_1   = null;
+    private String SinkFileName_2   = null;
+    private DataOutputStream out_1  = null;			// File stream reference.
+    private DataOutputStream out_2  = null;			// File stream reference.
+    private File file_1             = null;
+    private File file_2             = null;
+
+    
 	public void run()
     {
 		/************************************************************************************
@@ -36,116 +45,71 @@ public class SinkFilter extends FilterFramework
 		*	to the terminal.
 		*************************************************************************************/
 
-		Calendar TimeStamp = Calendar.getInstance();
-		SimpleDateFormat TimeStampFormat = new SimpleDateFormat("yyyy MM dd::hh:mm:ss:SSS");
-
-		int MeasurementLength = 8;		// This is the length of all measurements (including time) in bytes
-		int IdLength = 4;				// This is the length of IDs in the byte stream
-
-		byte databyte = 0;				// This is the data byte read from the stream
-		int bytesread = 0;				// This is the number of bytes read from the stream
-
-		long measurement;				// This is the word used to store all measurements - conversions are illustrated.
-		int id;							// This is the measurement id
-		int i;							// This is a loop counter
-
+		byte databyte       = 0;				// This is the data byte read from the stream
+                int  bytesread      = 0;
+                int  byteswritten   = 0;
+		
 		/*************************************************************
 		*	First we announce to the world that we are alive...
 		**************************************************************/
 
 		System.out.print( "\n" + this.getName() + "::Sink Reading ");
+                try
+		{
+                    /***********************************************************************************
+                    *	Here we open the file to write.
+                    ***********************************************************************************/
+                    if(SinkFileName_1 != null)
+                    {
+                        file_1 = new File(SinkFileName_1);
+                        // if file doesnt exists, then create it
+                        if (!file_1.exists()) 
+                        {
+                             file_1.createNewFile();
+                             System.out.println("\n" + this.getName() + "::Sink Creating file 1..." );
+                        }
+
+                        out_1 = new DataOutputStream(new FileOutputStream(file_1));
+                        System.out.println("\n" + this.getName() + "::Sink writing file 1..." );
+                    }
+                    if(SinkFileName_2 != null)
+                    {
+                        file_2 = new File(SinkFileName_2);
+                        // if file doesnt exists, then create it
+                        if (!file_2.exists()) 
+                        {
+                             file_2.createNewFile();
+                             System.out.println("\n" + this.getName() + "::Sink Creating file 2..." );
+                        }
+
+                        out_2 = new DataOutputStream(new FileOutputStream(file_2));
+                        System.out.println("\n" + this.getName() + "::Sink writing file 2..." );
+                    }
+                    
+                }
+                catch (IOException e)
+                {
+                  System.out.println("IOException : " + e);
+                }
 
 		while (true)
 		{
 			try
 			{
-				/***************************************************************************
-				// We know that the first data coming to this filter is going to be an ID and
-				// that it is IdLength long. So we first decommutate the ID bytes.
-				****************************************************************************/
-
-				id = 0;
-
-				for (i=0; i<IdLength; i++ )
-				{
-					databyte = ReadFilterInputPort();	// This is where we read the byte from the stream...
-
-					id = id | (databyte & 0xFF);		// We append the byte on to ID...
-
-					if (i != IdLength-1)				// If this is not the last byte, then slide the
-					{									// previously appended byte to the left by one byte
-						id = id << 8;					// to make room for the next byte we append to the ID
-
-					} // if
-
-					bytesread++;						// Increment the byte count
-
-				} // for
-
-				/****************************************************************************
-				// Here we read measurements. All measurement data is read as a stream of bytes
-				// and stored as a long value. This permits us to do bitwise manipulation that
-				// is neccesary to convert the byte stream into data words. Note that bitwise
-				// manipulation is not permitted on any kind of floating point types in Java.
-				// If the id = 0 then this is a time value and is therefore a long value - no
-				// problem. However, if the id is something other than 0, then the bits in the
-				// long value is really of type double and we need to convert the value using
-				// Double.longBitsToDouble(long val) to do the conversion which is illustrated.
-				// below.
-				*****************************************************************************/
-
-				measurement = 0;
-
-				for (i=0; i<MeasurementLength; i++ )
-				{
-					databyte = ReadFilterInputPort();
-					measurement = measurement | (databyte & 0xFF);	// We append the byte on to measurement...
-
-					if (i != MeasurementLength-1)					// If this is not the last byte, then slide the
-					{												// previously appended byte to the left by one byte
-						measurement = measurement << 8;				// to make room for the next byte we append to the
-																	// measurement
-					} // if
-
-					bytesread++;									// Increment the byte count
-
-				} // if
-
-				/****************************************************************************
-				// Here we look for an ID of 0 which indicates this is a time measurement.
-				// Every frame begins with an ID of 0, followed by a time stamp which correlates
-				// to the time that each proceeding measurement was recorded. Time is stored
-				// in milliseconds since Epoch. This allows us to use Java's calendar class to
-				// retrieve time and also use text format classes to format the output into
-				// a form humans can read. So this provides great flexibility in terms of
-				// dealing with time arithmetically or for string display purposes. This is
-				// illustrated below.
-				****************************************************************************/
-
-				if ( id == 0 )
-				{
-					TimeStamp.setTimeInMillis(measurement);
-
-				} // if
-
-				/****************************************************************************
-				// Here we pick up a measurement (ID = 3 in this case), but you can pick up
-				// any measurement you want to. All measurements in the stream are
-				// decommutated by this class. Note that all data measurements are double types
-				// This illustrates how to convert the bits read from the stream into a double
-				// type. Its pretty simple using Double.longBitsToDouble(long value). So here
-				// we print the time stamp and the data associated with the ID we are interested
-				// in.
-				****************************************************************************/
-
-				if ( id == 4 )
-				{
-					System.out.print( TimeStampFormat.format(TimeStamp.getTime()) + " ID = " + id + " " + Double.longBitsToDouble(measurement));
-
-				} // if
-
-				System.out.print( "\n" );
-
+                            if(out_1 !=null)
+                            {
+                                databyte = ReadFilterInputPort(1);	// This is where we read the byte from the stream...
+                                bytesread++;
+                                out_1.write(databyte);                    //Write byte to sink file
+                                byteswritten++;
+                            }
+                            if(out_2 !=null)
+                            {
+                                databyte = ReadFilterInputPort(2);	// This is where we read the byte from the stream...
+                                bytesread++;
+                                out_2.write(databyte);                    //Write byte to sink file
+                                byteswritten++;
+                            }
 			} // try
 
 			/*******************************************************************************
@@ -156,14 +120,54 @@ public class SinkFilter extends FilterFramework
 
 			catch (EndOfStreamException e)
 			{
-				ClosePorts();
+                                try
+                                {
+                                    if(out_1 != null)
+                                    {
+                                        out_1.close();
+                                    }
+                                    if(out_2 != null)
+                                    {
+                                        out_2.close();
+                                    }
+                                }
+                                catch ( IOException iox )
+                                {
+                                        System.out.println("\n" + this.getName() + "::Problem reading input data file::" + iox );
+                                } // catch
+                                
+                                ClosePorts();
 				System.out.print( "\n" + this.getName() + "::Sink Exiting; bytes read: " + bytesread );
 				break;
-
 			} // catch
+                        catch ( IOException iox )
+                        {
+                                System.out.println("\n" + this.getName() + "::Problem reading input data file::" + iox );
 
+                        } // catch
 		} // while
 
    } // run
+         public void SetSink(String fileName, int sinkNum)
+    {
+        switch (sinkNum)
+        {
+            case 1:
+            {
+                SinkFileName_1 = fileName;
+                break;
+            }
+            case 2:
+            {
+                SinkFileName_2 = fileName;
+                break;
+            }
+            default:
+            {
+                SinkFileName_1 = fileName;
+                break;
+            }
+        }//switch
+    } //SetSink
 
 } // SingFilter

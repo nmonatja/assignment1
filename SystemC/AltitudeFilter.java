@@ -1,16 +1,14 @@
 /******************************************************************************************************************
-* File:MiddleFilter.java
+* File:AltitudeFilter.java
 * Course: 17655
 * Project: Assignment 1
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
+*       1.1 N.Hoskeri, Feb,07,2016 - Modified to read from one channel and write to two channels
 *
 * Description:
 *
-* This class serves as an example for how to use the FilterRemplate to create a standard filter. This particular
-* example is a simple "pass-through" filter that reads data from the filter's input port and writes data out the
-* filter's output port.
 *
 * Parameters: 		None
 *
@@ -18,7 +16,7 @@
 *
 ******************************************************************************************************************/
 
-public class MiddleFilter extends FilterFramework
+public class AltitudeFilter extends FilterFramework
 {
 	public void run()
     {
@@ -30,7 +28,7 @@ public class MiddleFilter extends FilterFramework
 
 		// Next we write a message to the terminal to let the world know we are alive...
 
-		System.out.print( "\n" + this.getName() + "::Middle Reading ");
+		System.out.print( "\n" + this.getName() + "::Altitude Reading ");
 
 		while (true)
 		{
@@ -40,9 +38,10 @@ public class MiddleFilter extends FilterFramework
 
 			try
 			{
-				databyte = ReadFilterInputPort();
+				databyte = ReadFilterInputPort(1);
 				bytesread++;
-				WriteFilterOutputPort(databyte);
+				WriteFilterOutputPort(1, databyte);
+                                WriteFilterOutputPort(2, databyte);
 				byteswritten++;
 
 			} // try
@@ -59,4 +58,4 @@ public class MiddleFilter extends FilterFramework
 
    } // run
 
-} // MiddleFilter
+} // AltitudeFilter

@@ -5,7 +5,7 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
-*
+*       1.1 Feb,07,2016 - Modified to read from one channel and write to two channels
 * Description:
 *
 * This class serves as an example for how to use the SourceFilterTemplate to create a source filter. This particular
@@ -21,11 +21,11 @@ import java.io.*; // note we must add this here since we use BufferedReader clas
 
 public class SourceFilter extends FilterFramework
 {
+    private String SourceFile;
+    
 	public void run()
     {
-
-		String fileName = "../DataSets/FlightData.dat";	// Input data file.
-		int bytesread = 0;					// Number of bytes read from the input file.
+        	int bytesread = 0;					// Number of bytes read from the input file.
 		int byteswritten = 0;				// Number of bytes written to the stream.
 		DataInputStream in = null;			// File stream reference.
 		byte databyte = 0;					// The byte of data read from the file
@@ -36,7 +36,7 @@ public class SourceFilter extends FilterFramework
 			*	Here we open the file and write a message to the terminal.
 			***********************************************************************************/
 
-			in = new DataInputStream(new FileInputStream(fileName));
+			in = new DataInputStream(new FileInputStream(SourceFile));
 			System.out.println("\n" + this.getName() + "::Source reading file..." );
 
 			/***********************************************************************************
@@ -48,7 +48,7 @@ public class SourceFilter extends FilterFramework
 			{
 				databyte = in.readByte();
 				bytesread++;
-				WriteFilterOutputPort(databyte);
+				WriteFilterOutputPort(1,databyte);
 				byteswritten++;
 
 			} // while
@@ -92,5 +92,11 @@ public class SourceFilter extends FilterFramework
 		} // catch
 
    } // run
+        
+        public void SetSource(String fileName)
+    {
+        
+        SourceFile = fileName;
+    } //SetSource
 
 } // SourceFilter
