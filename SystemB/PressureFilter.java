@@ -79,10 +79,10 @@ public class PressureFilter extends FilterFramework
 				
 				if (frame.wildPoint) {
 					// send frame.wildPSI to Wild Point file
-					pipe(0, "int", 1);
-					pipe(frame.TimeStamp, "long", 1);
-					pipe(3, "int", 1);
-					pipe(frame.wildPSI, "double", 1);
+					pipe(0, "int", 2);
+					pipe(frame.TimeStamp, "long", 2);
+					pipe(3, "int", 2);
+					pipe(frame.wildPSI, "double", 2);
 				}
 			}
 			
