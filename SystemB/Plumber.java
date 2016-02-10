@@ -31,6 +31,7 @@ public class Plumber
 		AltitudeFilter Filter3 = new AltitudeFilter();
 		PressureFilter Filter4 = new PressureFilter();
 		SinkFilter Filter5 = new SinkFilter();
+		WildPointsFilter Filter6 = new WildPointsFilter();
 
 		/****************************************************************************
 		* Here we connect the filters starting with the sink filter (Filter 1) which
@@ -38,6 +39,7 @@ public class Plumber
 		* source filter (Filter3).
 		****************************************************************************/
 		Filter5.Connect(Filter4);
+		Filter6.Connect(Filter4, 2, 1); /*Connect Filter6 input port 1 to Filter 4's output port 2*/
 		Filter4.Connect(Filter3);
 		Filter3.Connect(Filter2); // This esstially says, "connect Filter3 input port to Filter2 output port
 		Filter2.Connect(Filter1); // This esstially says, "connect Filter2 intput port to Filter1 output port
@@ -51,6 +53,7 @@ public class Plumber
 		Filter3.start();
 		Filter4.start();
 		Filter5.start();
+		Filter6.start();
    } // main
 
 } // Plumber

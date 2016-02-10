@@ -5,7 +5,8 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Initial rewrite of original assignment 1 (ajl).
-*
+*       1.1 Feb 07,2016 - N.Hoskeri : Updated class to have two input ports and 2 output ports
+*                                     Any input port can be connected to any output port 
 * Description:
 *
 * This superclass defines a skeletal filter framework that defines a filter in terms of the input and output
@@ -40,15 +41,20 @@ public class FilterFramework extends Thread
 {
 	// Define filter input and output ports
 
-	private PipedInputStream InputReadPort = new PipedInputStream();
-	private PipedOutputStream OutputWritePort = new PipedOutputStream();
+	private PipedInputStream InputReadPort_1 = new PipedInputStream();
+	private PipedOutputStream OutputWritePort_1 = new PipedOutputStream();
+        
+    private PipedInputStream InputReadPort_2 = new PipedInputStream();
+	private PipedOutputStream OutputWritePort_2 = new PipedOutputStream();
 
 	// The following reference to a filter is used because java pipes are able to reliably
 	// detect broken pipes on the input port of the filter. This variable will point to
 	// the previous filter in the network and when it dies, we know that it has closed its
 	// output pipe and will send no more data.
 
-	private FilterFramework InputFilter;
+	private FilterFramework InputFilter_1 = null;
+    private FilterFramework InputFilter_2 = null;
+        
 
 	/***************************************************************************
 	* InnerClass:: EndOfStreamExeception
@@ -83,6 +89,9 @@ public class FilterFramework extends Thread
 	*
 	* Arguments:
 	* 	FilterFramework - this is the filter that this filter will connect to.
+        *       inPort : Input port of this filter
+        *       outPort : Output port of the specified filter
+        *       Filter : Filter whose output port is to be connected to this input port
 	*
 	* Returns: void
 	*
@@ -90,15 +99,89 @@ public class FilterFramework extends Thread
 	*
 	****************************************************************************/
 
-	void Connect( FilterFramework Filter )
+	void Connect( FilterFramework Filter, int outPort, int inPort )
 	{
 		try
 		{
 			// Connect this filter's input to the upstream pipe's output stream
-
-			InputReadPort.connect( Filter.OutputWritePort );
-			InputFilter = Filter;
-
+                        
+                        switch(inPort)
+                        {    
+                            case 1:
+                            {
+                                switch(outPort)
+                                {
+                                    case 1:
+                                    {
+                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                                        InputFilter_1 = Filter;
+                                        break;
+                                    }
+                                    case 2:
+                                    {
+                                        InputReadPort_1.connect( Filter.OutputWritePort_2 );
+                                        InputFilter_1 = Filter;
+                                        break;
+                                    }
+                                    default:
+                                    {
+                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                                        InputFilter_1 = Filter;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                            case 2:
+                            {
+                                switch(outPort)
+                                {
+                                    case 1:
+                                    {
+                                        InputReadPort_2.connect( Filter.OutputWritePort_1 );
+                                        InputFilter_2 = Filter;
+                                        break;
+                                    }
+                                    case 2:
+                                    {
+                                        InputReadPort_2.connect( Filter.OutputWritePort_2 );
+                                        InputFilter_2 = Filter;
+                                        break;
+                                    }
+                                    default:
+                                    {
+                                        InputReadPort_2.connect( Filter.OutputWritePort_1 );
+                                        InputFilter_2 = Filter;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                            default:
+                            {
+                                switch(outPort)
+                                {
+                                    case 1:
+                                    {
+                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                                        InputFilter_1 = Filter;
+                                        break;
+                                    }
+                                    case 2:
+                                    {
+                                        InputReadPort_1.connect( Filter.OutputWritePort_2 );
+                                        InputFilter_2 = Filter;
+                                        break;
+                                    }
+                                    default:
+                                    {
+                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                                        InputFilter_1 = Filter;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
 		} // try
 
 		catch( Exception Error )
@@ -108,6 +191,12 @@ public class FilterFramework extends Thread
 		} // catch
 
 	} // Connect
+	
+	/* another connect method to support the old stuff */
+	void Connect( FilterFramework Filter) {
+		Connect(Filter, 1, 1);
+		/* port 1 is the default */
+	}
 
 	/***************************************************************************
 	* CONCRETE METHOD:: ReadFilterInputPort
@@ -121,9 +210,19 @@ public class FilterFramework extends Thread
 	*
 	****************************************************************************/
 
-	byte ReadFilterInputPort() throws EndOfStreamException
+	byte ReadFilterInputPort(int port_num) throws EndOfStreamException
 	{
 		byte datum = 0;
+                PipedInputStream InputReadPort = InputReadPort_1;
+                
+                if(port_num == 1)
+                {
+                    InputReadPort = InputReadPort_1;
+                }
+                else if(port_num == 2)
+                {
+                    InputReadPort = InputReadPort_2;
+                }
 
 		/***********************************************************************
 		* Since delays are possible on upstream filters, we first wait until
@@ -138,12 +237,11 @@ public class FilterFramework extends Thread
 		* Unfortunately Java pipes do not throw exceptions when the input pipe is
 		* broken.
 		***********************************************************************/
-
 		try
 		{
 			while (InputReadPort.available()==0 )
 			{
-				if (EndOfInputStream())
+				if (EndOfInputStream(port_num))
 				{
 					throw new EndOfStreamException("End of input stream reached");
 
@@ -187,6 +285,10 @@ public class FilterFramework extends Thread
 		} // catch
 
 	} // ReadFilterPort
+	
+	byte ReadFilterInputPort() throws EndOfStreamException {
+		return ReadFilterInputPort(1);
+	}
 
 	/***************************************************************************
 	* CONCRETE METHOD:: WriteFilterOutputPort
@@ -202,11 +304,22 @@ public class FilterFramework extends Thread
 	*
 	****************************************************************************/
 
-	void WriteFilterOutputPort(byte datum)
+	void WriteFilterOutputPort(int port_num, byte datum)
 	{
+                PipedOutputStream OutputWritePort = OutputWritePort_1;
+                
+                if(port_num == 1)
+                {
+                    OutputWritePort = OutputWritePort_1;
+                }
+                else if(port_num == 2)
+                {
+                    OutputWritePort = OutputWritePort_2;
+                }
+                
 		try
 		{
-            OutputWritePort.write((int) datum );
+                        OutputWritePort.write((int) datum );
 		   	OutputWritePort.flush();
 
 		} // try
@@ -220,6 +333,10 @@ public class FilterFramework extends Thread
 		return;
 
 	} // WriteFilterPort
+	
+	void WriteFilterOutputPort(byte datum) {
+		WriteFilterOutputPort(1, datum);
+	}
 
 	/***************************************************************************
 	* CONCRETE METHOD:: EndOfInputStream
@@ -238,8 +355,17 @@ public class FilterFramework extends Thread
 	*
 	****************************************************************************/
 
-	private boolean EndOfInputStream()
+	private boolean EndOfInputStream(int filterNum)
 	{
+                FilterFramework InputFilter = InputFilter_1;
+                if(filterNum == 1)
+                {
+                    InputFilter = InputFilter_1;
+                }
+                else if(filterNum == 2)
+                {
+                    InputFilter = InputFilter_2;
+                }
 		if (InputFilter.isAlive())
 		{
 			return false;
@@ -270,8 +396,10 @@ public class FilterFramework extends Thread
 	{
 		try
 		{
-			InputReadPort.close();
-			OutputWritePort.close();
+			InputReadPort_1.close();
+            InputReadPort_2.close();
+			OutputWritePort_1.close();
+            OutputWritePort_2.close();
 
 		}
 		catch( Exception Error )
@@ -281,6 +409,68 @@ public class FilterFramework extends Thread
 		} // catch
 
 	} // ClosePorts
+        
+    void CloseInputPorts(int portNum)
+	{
+		try
+		{
+                    switch(portNum)
+                    {
+                        case 1:
+                        {
+                            InputReadPort_1.close();
+                            break;
+                        }
+                        case 2:
+                        {
+                            InputReadPort_2.close();
+                            break;
+                        }
+                        default:
+                        {
+                            break;
+                        }
+                            
+                    }
+		}
+		catch( Exception Error )
+		{
+			System.out.println( "\n" + this.getName() + " CloseInputPorts error::" + Error );
+
+		} // catch
+
+	} // CloseInputPorts
+        
+    void CloseOutputPorts(int portNum)
+	{
+		try
+		{
+                    switch(portNum)
+                    {
+                        case 1:
+                        {
+                            OutputWritePort_1.close();
+                            break;
+                        }
+                        case 2:
+                        {
+                            OutputWritePort_2.close();
+                            break;
+                        }
+                        default:
+                        {
+                            break;
+                        }
+                            
+                    }
+		}
+		catch( Exception Error )
+		{
+			System.out.println( "\n" + this.getName() + " CloseOutputPorts error::" + Error );
+
+		} // catch
+
+	} // CloseOutputPorts
 
 	/***************************************************************************
 	* CONCRETE METHOD:: run

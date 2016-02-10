@@ -34,7 +34,7 @@ import java.text.SimpleDateFormat;		// This class is used to format and write ti
 public class PressureFilter extends FilterFramework
 {
 		ArrayList<DataFrame> frameList = new ArrayList<DataFrame>();
-		SimpleDateFormat TimeStampFormat = new SimpleDateFormat("yyyy:dd:hh:mm:ss");
+		// SimpleDateFormat TimeStampFormat = new SimpleDateFormat("yyyy:dd:hh:mm:ss");
 		DecimalFormat TempFormat = new DecimalFormat("#000.00000");
 		DecimalFormat AltitudeFormat = new DecimalFormat("#000000.00000");
 		DecimalFormat PressureFormat = new DecimalFormat("#00.00000");
@@ -63,63 +63,52 @@ public class PressureFilter extends FilterFramework
 			
 			for (DataFrame frame : frameList)
 			{
-				pipeInteger(0);
+				pipe(0, "int", 1);
 				//to do - send timestamp
-				pipeLong(frame.TimeStamp);
-				pipeInteger(1);
-				pipeDouble(frame.velocity);
-				pipeInteger(2);
-				pipeDouble(frame.altitude);
-				pipeInteger(3);
-				pipeDouble(frame.pressure);
-				pipeInteger(4);
-				pipeDouble(frame.temperature);
-				pipeInteger(5);
-				pipeDouble(frame.attitude);		
+				pipe(frame.TimeStamp, "long", 1);
+				pipe(1, "int", 1);
+				pipe(frame.velocity, "double", 1);
+				pipe(2, "int", 1);
+				pipe(frame.altitude, "double", 1);
+				pipe(3, "int", 1);
+				pipe(frame.pressure, "double", 1);
+				pipe(4, "int", 1);
+				pipe(frame.temperature, "double", 1);
+				pipe(5, "int", 1);
+				pipe(frame.attitude, "double", 1);		
+				
+				if (frame.wildPoint) {
+					// send frame.wildPSI to Wild Point file
+					pipe(0, "int", 1);
+					pipe(frame.TimeStamp, "long", 1);
+					pipe(3, "int", 1);
+					pipe(frame.wildPSI, "double", 1);
+				}
 			}
 			
 			
 		}
-		//pipe Double type 
-		public void pipeDouble(Double input)
-		{
-			ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);				// used to write out transformed measurement
-			long output = Double.doubleToRawLongBits(input); 
-			buffer.putLong(0, output);
+		
+		public void pipe(Object input, String type, int port) {
+			ByteBuffer buffer; 
+			buffer = ByteBuffer.allocate(Long.BYTES);
+			if (type.equals("double")) {
+				long output = Double.doubleToRawLongBits((Double) input);
+				buffer.putLong(0, output);
+			} else if (type.equals("int")) {
+				buffer = ByteBuffer.allocate(4);
+				buffer.putInt((Integer) input);
+			} else if (type.equals("long")) {
+				long output = (Long) input;
+				buffer.putLong(0, output);
+			}
+			
 			byte[] bufferArray = buffer.array();
 			for (int i=0; i<bufferArray.length; i++)
 			{
-				WriteFilterOutputPort(bufferArray[i]);
+				WriteFilterOutputPort(port, bufferArray[i]);
 			}
 		}
-		
-		//pipe Integer type 
-		public void pipeInteger(Integer input)
-		{			
-			ByteBuffer b = ByteBuffer.allocate(4);
-			//b.order(ByteOrder.BIG_ENDIAN); // optional, the initial order of a byte buffer is always BIG_ENDIAN.
-			b.putInt(input);
-
-			byte[] bufferArray = b.array();
-			
-			for (int i=0; i<bufferArray.length; i++)
-			{
-				WriteFilterOutputPort(bufferArray[i]);
-			}
-		}
-		
-		//pipe Long type 
-				public void pipeLong(Long input)
-				{
-					ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);				// used to write out transformed measurement
-					long output = input; 
-					buffer.putLong(0, output);
-					byte[] bufferArray = buffer.array();
-					for (int i=0; i<bufferArray.length; i++)
-					{
-						WriteFilterOutputPort(bufferArray[i]);
-					}
-				}
 		
 		//method used to check whether a pressure point is wild or not
 		public Boolean isWildPoint (Double PSI, Double previousPSI)
@@ -412,11 +401,10 @@ public class PressureFilter extends FilterFramework
 
 			catch (EndOfStreamException e)
 			{
-				extrapolatePoints();//perform pressure point extrapolation for wild points
+				extrapolatePoints(); //perform pressure point extrapolation for wild points
 				//printFrames();//used for testing only -> SinkFilter must be used in a live system
 				pipeOutput();//pipe the output from Data Frames
 				ClosePorts();
-
 
 				System.out.print( "\n" + this.getName() + "::PressureFilter Exiting; bytes read: " + bytesread );
 				break;

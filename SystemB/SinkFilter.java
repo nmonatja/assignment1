@@ -29,7 +29,7 @@ import java.text.SimpleDateFormat;		// This class is used to format and write ti
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-
+import java.text.NumberFormat;
 
 public class SinkFilter extends FilterFramework
 {
@@ -42,7 +42,7 @@ public class SinkFilter extends FilterFramework
 		*************************************************************************************/
 
 		Calendar TimeStamp = Calendar.getInstance();
-		SimpleDateFormat TimeStampFormat = new SimpleDateFormat("YYYY:DD:HH:MM:SS");
+		SimpleDateFormat TimeStampFormat = new SimpleDateFormat("YYYY:MM:dd:HH:mm:ss");
 		DecimalFormat TempFormat = new DecimalFormat("#000.00000");
 		DecimalFormat AltitudeFormat = new DecimalFormat("#000000.00000");
 		DecimalFormat PressureFormat = new DecimalFormat("#00.00000");
@@ -64,7 +64,7 @@ public class SinkFilter extends FilterFramework
 		try 
 		{	
 
-			BufferedWriter writer = new BufferedWriter( new FileWriter( "OutputA.dat"));
+			BufferedWriter writer = new BufferedWriter( new FileWriter( "OutputB.dat"));
 
 			/*************************************************************
 			*	First we announce to the world that we are alive...
@@ -72,9 +72,9 @@ public class SinkFilter extends FilterFramework
 
 			System.out.print( "\n" + this.getName() + "::Sink Reading ");
 		
-			writer.write("Time:\t\t\t\t\tTemperature(C):\t\t\tAltitude (m):");
+			writer.write("Time:\t\t\t\t\tTemperature(C):\t\tAltitude (m):\t\tPressure (psi):");
 			writer.newLine();
-			writer.write("----------------------------------------------------------------------------");
+			writer.write("------------------------------------------------------------------------------------------");
 			writer.newLine();
 
 			while (true)
@@ -183,10 +183,11 @@ public class SinkFilter extends FilterFramework
 						// print out the file 
 						// not 100% happy with this formatting yet
 						temperature = measurement;
-						output = TimeStampFormat.format(TimeStamp.getTime()) + "    " 
-								+ TempFormat.format(Double.longBitsToDouble(temperature)) + "    " + AltitudeFormat.format(Double.longBitsToDouble(alt)) 
-								+ "    " + TempFormat.format(Double.longBitsToDouble(pressure));
-						System.out.println(output);
+						output = TimeStampFormat.format(TimeStamp.getTime()) + "\t\t" 
+								+ TempFormat.format(Double.longBitsToDouble(temperature)) + "\t\t\t" 
+								+ AltitudeFormat.format(Double.longBitsToDouble(alt)) + "\t\t" 
+								+ PressureFormat.format(Double.longBitsToDouble(pressure));
+						//System.out.println(output);
 						writer.write(output);
 						writer.newLine();
 
