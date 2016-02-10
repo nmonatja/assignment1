@@ -93,10 +93,25 @@ public class SourceFilter extends FilterFramework
 
    } // run
         
-        public void SetSource(String fileName)
+    public Boolean SetSource(String fileName)
     {
+        Boolean fileExists = false;
         
-        SourceFile = fileName;
+        File file_1 = new File(fileName);
+        // if file doesnt exists, then create it
+        if (file_1.exists()) 
+        {   
+            SourceFile = fileName;
+            fileExists = true;
+        }
+        else
+        {
+            System.out.println("\n" + "Unable to locate source file " + fileName);
+            fileExists = false;
+        }
+        
+        
+        return (fileExists);
     } //SetSource
 
 } // SourceFilter

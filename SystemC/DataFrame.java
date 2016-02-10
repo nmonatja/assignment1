@@ -4,7 +4,6 @@ import java.util.Calendar;
 public class DataFrame {
 
 	//define data frame variables. These will hold the information from each frame
-	int  SourceChannel;
         Long TimeStamp;
 	Double velocity;
 	Double altitude;
@@ -18,7 +17,6 @@ public class DataFrame {
 	public DataFrame(int srcChan, Long TS, Double vel, Double alt, 
 			Double press, Double temp, Double att, Boolean WP, Double wPSI) 
 	{
-		SourceChannel   = srcChan;
                 TimeStamp       = TS;
 		velocity        = vel;
 		altitude        = alt;
@@ -32,7 +30,6 @@ public class DataFrame {
 	//default constructor
 	public DataFrame ()
 	{
-		SourceChannel   = 0;
                 TimeStamp       = null;
 		velocity        = null;
 		altitude        = null;

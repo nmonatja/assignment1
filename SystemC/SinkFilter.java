@@ -30,11 +30,8 @@ import java.io.*; // note we must add this here since we use BufferedReader clas
 public class SinkFilter extends FilterFramework
 {
     private String SinkFileName_1   = null;
-    private String SinkFileName_2   = null;
     private DataOutputStream out_1  = null;			// File stream reference.
-    private DataOutputStream out_2  = null;			// File stream reference.
     private File file_1             = null;
-    private File file_2             = null;
 
     
 	public void run()
@@ -72,30 +69,22 @@ public class SinkFilter extends FilterFramework
                         out_1 = new DataOutputStream(new FileOutputStream(file_1));
                         System.out.println("\n" + this.getName() + "::Sink writing file 1..." );
                     }
-                    if(SinkFileName_2 != null)
-                    {
-                        file_2 = new File(SinkFileName_2);
-                        // if file doesnt exists, then create it
-                        if (!file_2.exists()) 
-                        {
-                             file_2.createNewFile();
-                             System.out.println("\n" + this.getName() + "::Sink Creating file 2..." );
-                        }
-
-                        out_2 = new DataOutputStream(new FileOutputStream(file_2));
-                        System.out.println("\n" + this.getName() + "::Sink writing file 2..." );
-                    }
-                    
                 }
                 catch (IOException e)
                 {
                   System.out.println("IOException : " + e);
+                  
+                  /*Clean up*/
+                  out_1 = null;
+                  ClosePorts();
                 }
 
-		while (true)
-		{
-			try
-			{
+                if(out_1 !=null)
+                {
+                    while (true)
+                    {
+                        try
+                        {
                             if(out_1 !=null)
                             {
                                 databyte = ReadFilterInputPort(1);	// This is where we read the byte from the stream...
@@ -103,71 +92,44 @@ public class SinkFilter extends FilterFramework
                                 out_1.write(databyte);                    //Write byte to sink file
                                 byteswritten++;
                             }
-                            if(out_2 !=null)
-                            {
-                                databyte = ReadFilterInputPort(2);	// This is where we read the byte from the stream...
-                                bytesread++;
-                                out_2.write(databyte);                    //Write byte to sink file
-                                byteswritten++;
-                            }
-			} // try
+                        } // try
 
-			/*******************************************************************************
-			*	The EndOfStreamExeception below is thrown when you reach end of the input
-			*	stream (duh). At this point, the filter ports are closed and a message is
-			*	written letting the user know what is going on.
-			********************************************************************************/
+                        /*******************************************************************************
+                        *	The EndOfStreamExeception below is thrown when you reach end of the input
+                        *	stream (duh). At this point, the filter ports are closed and a message is
+                        *	written letting the user know what is going on.
+                        ********************************************************************************/
 
-			catch (EndOfStreamException e)
-			{
+                        catch (EndOfStreamException e)
+                        {
                                 try
                                 {
                                     if(out_1 != null)
                                     {
                                         out_1.close();
                                     }
-                                    if(out_2 != null)
-                                    {
-                                        out_2.close();
-                                    }
                                 }
                                 catch ( IOException iox )
                                 {
                                         System.out.println("\n" + this.getName() + "::Problem reading input data file::" + iox );
                                 } // catch
-                                
+
                                 ClosePorts();
-				System.out.print( "\n" + this.getName() + "::Sink Exiting; bytes read: " + bytesread );
-				break;
-			} // catch
+                                System.out.print( "\n" + this.getName() + "::Sink Exiting; bytes read: " + bytesread );
+                                break;
+                        } // catch
                         catch ( IOException iox )
                         {
-                                System.out.println("\n" + this.getName() + "::Problem reading input data file::" + iox );
+                                System.out.println("\n" + this.getName() + "::Problem writing output data file::" + iox );
 
                         } // catch
-		} // while
+                    } // while
+                }
 
    } // run
-         public void SetSink(String fileName, int sinkNum)
+    public void SetSink(String fileName)
     {
-        switch (sinkNum)
-        {
-            case 1:
-            {
-                SinkFileName_1 = fileName;
-                break;
-            }
-            case 2:
-            {
-                SinkFileName_2 = fileName;
-                break;
-            }
-            default:
-            {
-                SinkFileName_1 = fileName;
-                break;
-            }
-        }//switch
+        SinkFileName_1 = fileName;
     } //SetSink
 
 } // SingFilter

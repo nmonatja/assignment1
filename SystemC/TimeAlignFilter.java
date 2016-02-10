@@ -5,7 +5,7 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
-*       1.1 Feb 07,2016 - N.Hoskeri. Created
+*       1.1 Feb 07,2016 - N.Hoskeri. Created Time Align Filter
 * Description:
 *
 * This filter merges inputs from two input ports, merges sorts the data based on timestamp and pipes the data out of the output port
@@ -23,8 +23,8 @@ import java.text.DecimalFormat;
 
 public class TimeAlignFilter extends FilterFramework
 {
-        private ArrayList<DataFrame>    DataframeList   = new ArrayList<DataFrame>();
-        private Boolean                 DbgTraceOn      = true;
+        FrameList                       DtFrmList           = new FrameList();
+        Integer                         TimeStampParamID    = 0;
         
 	public void run()
     {
@@ -39,7 +39,7 @@ public class TimeAlignFilter extends FilterFramework
                 
                 /*Sort Data Frame List*/
                 DbgTrace( "\n" + this.getName() + "::Sorting merged frame list");
-                Collections.sort(DataframeList, new DataFrameCompare());
+                DtFrmList.Sort(TimeStampParamID);               /*Sort the list on time stamp*/
                 
                 DbgTrace( "\n" + this.getName() + "::Piping out merge and sortedframe data" + "\n");
                 
@@ -55,16 +55,17 @@ public class TimeAlignFilter extends FilterFramework
                         );
                         
                 DbgTrace( "\n" );
-                /*Pipe Out DataFrame array list*/
+                /*Pipe Out Frame List*/
                 
-                for (DataFrame frame : DataframeList)
+                for(int i=0; i< DtFrmList.size();i++)
                 {
-                    /*if(frame.SourceChannel == 1)*/
+                    Frame f = DtFrmList.get(i);
+                    
+                    //if(f.SourceChannel == 1)
                     {
-                        PipeOutFrame( frame, 1);
+                        PipeOutFrame(f, 1);
                         
-                        /*Print to console - works only if DbgTraceOn == true*/
-                        PrintFrame(frame);
+                        PrintFrame(f);
                     }
                 }
 
@@ -85,15 +86,10 @@ public class TimeAlignFilter extends FilterFramework
         long measurement = 0;
         int measurementLength = 8;
         
-        Calendar TimeStamp = Calendar.getInstance();
-        long TS = 0; 
-        Double temp = null;
-        Double pressure = null;
-        Double alt = null;
-        Double vel = null;
-        Double att = null;
-        
         Boolean isFirstFrame = true;
+        
+        Frame f = new Frame(portNum);
+        
         
         while (true)
         {
@@ -129,67 +125,29 @@ public class TimeAlignFilter extends FilterFramework
                         measurement = measurement << 8;			// to make room for the next byte we append to the
                     } // if
                 } // if
-
-                switch(id)
+                
+                
+                if(id == 0)
                 {
-                    case 0:
+                    /*This is a new frame, insert the previous frame in the list. Dont do it if it is the very first frame*/
+                    if(!isFirstFrame)
                     {
-                        /*This is a new frame, insert the previous frame in the list. Dont do it if it is the very first frame*/
-                        if(!isFirstFrame)
-                        {
-                            DataFrame Frame  = new DataFrame(portNum, TS, vel, alt, pressure, temp, att, false, null );
-                            DataframeList.add(Frame);
-                        }
-                        /*Reinitialize new frame variables*/
-                        isFirstFrame = false;
-                        temp        = null;
-                        pressure    = null;
-                        alt         = null;
-                        vel         = null;
-                        att         = null;
-                        
-                        TimeStamp.setTimeInMillis(measurement);
-                        TS = measurement;
-                        break;
+                        /*Insert the new frame in the frame list*/
+                        DtFrmList.add(f);
+                        f = new Frame(portNum);
                     }
-                    case 1:
-                    {
-                        vel = Double.longBitsToDouble(measurement);
-                        break;
-                    }
-                    case 2:
-                    {
-                        alt = Double.longBitsToDouble(measurement);
-                        break;
-                    }
-                    case 3:
-                    {
-                        pressure = Double.longBitsToDouble(measurement);
-                        break;
-                    }
-                    case 4:
-                    {
-                        temp = Double.longBitsToDouble(measurement);
-                        break;
-                    }
-                    case 5:
-                    {
-                        att = Double.longBitsToDouble(measurement);
-
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
+                    isFirstFrame = false;
                 }
-                    
+                Measurement m = new Measurement(new Integer(id), new Long(measurement), true);
+                
+                /*Add the measurement to the frame*/
+                f.add(m);
             }
+                
             catch (EndOfStreamException e)
             {
-                /*Insert Final frame*/
-                DataFrame Frame  = new DataFrame(portNum, TS, vel, alt, pressure, temp, att, false, null );
-                DataframeList.add(Frame);
+                /*Insert Final frame in the frame list*/
+                DtFrmList.add(f);
                 
                 CloseInputPorts(portNum);
 
@@ -200,116 +158,13 @@ public class TimeAlignFilter extends FilterFramework
         } // while
 
     }
-     
-    ByteBuffer Serialize(Long data) 
-    {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(0, data);
-        return (buffer);
-    }
     
-    ByteBuffer Serialize(Integer data) 
+    void  PipeOutFrame(Frame frame, int outPort)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
-        buffer.putInt(0, data);
-        return (buffer);
+        ByteBuffer buffer = frame.Serialize();
+        PipeOutByteBuffer( buffer, outPort);
     }
-    
-    ByteBuffer Serialize(Double data) 
-    {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(0, Double.doubleToRawLongBits(data));
-        return (buffer);
-    }
-    
-    void  PipeOutFrame(DataFrame frame, int outPort)
-    {
-        PipeOutMeasurement(frame, 0,  outPort);
-        PipeOutMeasurement(frame, 1,  outPort);
-        PipeOutMeasurement(frame, 2,  outPort);
-        PipeOutMeasurement(frame, 3,  outPort);
-        PipeOutMeasurement(frame, 4,  outPort);
-        PipeOutMeasurement(frame, 5,  outPort);
         
-    }
-
-    void PipeOutMeasurement(DataFrame frame, Integer measurementID, int outPort)
-    {
-        ByteBuffer idBuffer             = null;
-        ByteBuffer measurementBuffer    = null;
-        Boolean pipeData                = false;
-        
-        idBuffer = Serialize(measurementID); 
-        
-        switch(measurementID)
-        {
-            case 0:
-            {
-                measurementBuffer = Serialize(frame.TimeStamp);
-                pipeData = true;
-                break;
-            }
-            case 1:
-            {
-                if(frame.velocity !=null)
-                {
-                    measurementBuffer = Serialize(frame.velocity);
-                    pipeData = true;
-                }
-                
-                break;
-            }
-            case 2:
-            {
-                if(frame.altitude !=null)
-                {
-                    measurementBuffer = Serialize(frame.altitude);
-                    pipeData = true;
-                }
-                break;
-            }
-            case 3:
-            {
-                if(frame.pressure !=null)
-                {
-                    measurementBuffer = Serialize(frame.pressure);
-                    pipeData = true;
-                }
-                break;
-            }
-            case 4:
-            {
-                if(frame.temperature !=null)
-                {
-                    measurementBuffer = Serialize(frame.temperature);
-                    pipeData = true;
-                }
-                break;
-            }
-            case 5:
-            {
-                if(frame.attitude !=null)
-                {
-                    measurementBuffer = Serialize(frame.attitude);
-                    pipeData = true;
-                }
-                break;
-            }
-            default:
-            {
-                measurementBuffer = Serialize(Double.longBitsToDouble(0));
-                pipeData = false;
-                break;
-            }
-        }
-        
-        if(pipeData)
-        {
-            PipeOutByteBuffer( idBuffer, outPort);
-            PipeOutByteBuffer( measurementBuffer, outPort);           
-        }
-    }
-    
     void PipeOutByteBuffer(ByteBuffer buffer, int outPort)
     {
         byte[] bufferArray = buffer.array();
@@ -319,7 +174,7 @@ public class TimeAlignFilter extends FilterFramework
         }
     }
     
-    void PrintFrame(DataFrame frame)
+    String PrintFrame(Frame frame)
     {
         SimpleDateFormat    timestampFormat = new SimpleDateFormat("yyyy:dd:hh:mm:ss");
         DecimalFormat       tempFormat      = new DecimalFormat("#000.00000");
@@ -336,44 +191,58 @@ public class TimeAlignFilter extends FilterFramework
         String velStr       = "***";
         String attStr       = "***";
         
-        if(frame.TimeStamp !=null)
+        
+        for(int i=0; i< frame.size();i++)
         {
-            tsStr = timestampFormat.format(frame.TimeStamp);
-        }
-        if(frame.velocity !=null)
-        {
-            velStr = velocityFormat.format(frame.velocity);
-        }
-        if(frame.altitude !=null)
-        {
-            altStr = altitudeFormat.format(frame.altitude);
-        }
-        if(frame.pressure !=null)
-        {
-            pressStr = pressureFormat.format(frame.pressure);
+            Measurement measurement = frame.get(i);
+            
+            switch(measurement.paramID)
+            {
+                case 0 : 
+                {
+                    tsStr = timestampFormat.format(measurement.paramVal);
+                    break;
+                }
+                case 1 : 
+                {
+                    velStr = velocityFormat.format(new Double(Double.longBitsToDouble(measurement.paramVal)));
+                    break;
+                }
+                case 2 : 
+                {
+                    altStr = altitudeFormat.format(new Double(Double.longBitsToDouble(measurement.paramVal)));
+                    break;
+                }
+                case 3 : 
+                {
+                    pressStr = pressureFormat.format(new Double(Double.longBitsToDouble(measurement.paramVal)));
+                    break;
+                }
+                case 4 : 
+                {
+                    tempStr = tempFormat.format(new Double(Double.longBitsToDouble(measurement.paramVal)));
+                    break;
+                }
+                case 5 : 
+                {
+                    attStr = attitudeFormat.format(new Double(Double.longBitsToDouble(measurement.paramVal)));
+                    break;
+                }
+            }
         }
         
-        if(frame.temperature !=null)
-        {
-            tempStr = tempFormat.format(frame.temperature);
-        }
-        if(frame.attitude !=null)
-        {
-            attStr = attitudeFormat.format(frame.attitude);
-        }
-        
-        
-        
-        outputStr = frame.SourceChannel + "\t" + 
-                    tsStr               + "\t" + 
-                    velStr              + "\t" + 
-                    altStr              + "\t" + 
-                    pressStr            + "\t" + 
-                    tempStr             + "\t" + 
+        outputStr = frame.getSourceChannel()+ "\t" + 
+                    tsStr                   + "\t" + 
+                    velStr                  + "\t" + 
+                    altStr                  + "\t" + 
+                    pressStr                + "\t" + 
+                    tempStr                 + "\t" + 
                     attStr;
         
         DbgTrace(outputStr);
 	DbgTrace( "\n" );
+        
+        return(outputStr);
     }
     
     void DbgTrace(String output)
@@ -383,23 +252,5 @@ public class TimeAlignFilter extends FilterFramework
             System.out.print(output);
         }
     }
-            
-            
-    class DataFrameCompare implements Comparator<DataFrame>
-    {
 
-            @Override
-            public int compare(DataFrame f1, DataFrame f2) 
-            {
-                    if(f1.TimeStamp < f2.TimeStamp)
-                    {
-                        return -1;
-                    } 
-                    else 
-                    {
-                        return 1;
-                    }
-            }
-    }            
-        
 } // TimeAlignFilter

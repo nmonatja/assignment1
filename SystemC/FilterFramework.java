@@ -55,6 +55,8 @@ public class FilterFramework extends Thread
 	private FilterFramework InputFilter_1 = null;
         private FilterFramework InputFilter_2 = null;
         
+        boolean   DbgTraceOn            = false;
+        
 
 	/***************************************************************************
 	* InnerClass:: EndOfStreamExeception
