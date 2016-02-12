@@ -208,7 +208,42 @@ class Measurement
         {
             SortParamID = paramID;
             Collections.sort(FrameList, new FrameCompare());
+        }
         
+        Measurement FindNextValidMeasurement(Integer paramID, int index)
+        {
+            /*Find the next valid measurement for a given parameter ID in the frames in the framelist after the given index*/
+            Measurement measurement = null;
+            
+            for(int i=index+1;i< this.size();i++)
+            {
+                Frame frame = this.get(i);
+                Measurement m = frame.find(paramID);
+                if(m.validity)
+                {
+                    measurement = m;
+                    break;
+                }
+            }
+            return(measurement);
+        }
+        
+        Measurement FindPrevValidMeasurement(Integer paramID, int index)
+        {
+            /*Find the next valid measurement for a given parameter ID in the frames in the framelist after the given index*/
+            Measurement measurement = null;
+            
+            for(int i=index-1;i>=0;i--)
+            {
+                Frame frame = this.get(i);
+                Measurement m = frame.find(paramID);
+                if(m.validity)
+                {
+                    measurement = m;
+                    break;
+                }
+            }
+            return(measurement);
         }
         
         class FrameCompare implements Comparator<Frame>

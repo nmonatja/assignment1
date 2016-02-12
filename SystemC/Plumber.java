@@ -31,15 +31,8 @@ public class Plumber
 
       
         /****************************************************************************
-        * Here we instantiate the filters.
+        * Get the source and sink names from the property file
         ****************************************************************************/
-        /*
-        String Source_1_fileName = "W:/usr/nhoskeri/personal/TEP/course/17-655/Assignment/A1/temp/DataSets/SubSetA.dat";             // Input data file.
-        String Source_2_fileName = "W:/usr/nhoskeri/personal/TEP/course/17-655/Assignment/A1/temp/DataSets/SubSetB.dat";             // Input data file.
-        String Sink_1_fileName   = "W:/usr/nhoskeri/personal/TEP/course/17-655/Assignment/A1/temp/DataSets/LessThan10K.dat";         // Sink 1 Data file
-        String Sink_2_fileName   = "W:/usr/nhoskeri/personal/TEP/course/17-655/Assignment/A1/temp/DataSets/PressureWildPoints.dat";  // Sink 2 Data file
-        String Sink_3_fileName   = "W:/usr/nhoskeri/personal/TEP/course/17-655/Assignment/A1/temp/DataSets/OutputC.dat";             // Sink 3 Data file
-        */
         String DataSetsSourceFolder    = configProp.getProperty("DataSetsSourceFolder");                         // Source data folder.
         String Source_1_fileName = DataSetsSourceFolder + configProp.getProperty("Source_1_fileName");           // Input data file.
         String Source_2_fileName = DataSetsSourceFolder + configProp.getProperty("Source_2_fileName");           // Input data file.
@@ -48,6 +41,11 @@ public class Plumber
         String Sink_1_fileName   = DataSetsSinkFolder + configProp.getProperty("Sink_1_fileName");              // Sink 1 Data file
         String Sink_2_fileName   = DataSetsSinkFolder + configProp.getProperty("Sink_2_fileName");              // Sink 2 Data file
         String Sink_3_fileName   = DataSetsSinkFolder + configProp.getProperty("Sink_3_fileName");              // Sink 3 Data file
+        
+        /****************************************************************************
+        * Here we instantiate the filters.
+        ****************************************************************************/
+
 
         SourceFilter SrcFilter1     = new SourceFilter();
         if(!SrcFilter1.SetSource(Source_1_fileName)) return;
@@ -72,8 +70,9 @@ public class Plumber
 
         
         //TimeAlgnFlt.DbgTraceOn      = true;
-        AltFlt.DbgTraceOn           = true;
-
+        //AltFlt.DbgTraceOn           = true;
+        PressFlt.DbgTraceOn         = true;
+        
         /****************************************************************************
         * Here we connect the filters starting with the sink filter (Filter 1) which
         * we connect to Filter2 the middle filter. Then we connect Filter2 to the

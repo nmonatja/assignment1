@@ -45,7 +45,7 @@ public class AltitudeFilter extends FilterFramework
 
                 DbgTrace(headerStr);
                 PipeOutByteBuffer(Serialize(headerStr), 2);
-                PipeOutByteBuffer(Serialize(new String("====================================================================================================================\n")), 2);
+                PipeOutByteBuffer(Serialize("====================================================================================================================\n"), 2);
                 
                 DbgTrace( "\n" + this.getName() + "::Processing Input Port 1");
                 ProcessInputChannel(1);
@@ -177,7 +177,7 @@ void  FilterFrame(Double filterVal, Frame frame)
                 
                 CloseInputPorts(portNum);
 
-                DbgTrace( "\n" + this.getName() + "::Time Align Filter Exiting; bytes read from channel 1: " + bytesread + " bytes Written:" + byteswritten);
+                DbgTrace( "\n" + this.getName() + "::Pressure Filter Exiting; bytes read from channel 1: " + bytesread + " bytes Written:" + byteswritten);
                 break;
             } // catch
 
