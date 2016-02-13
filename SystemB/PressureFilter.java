@@ -76,6 +76,17 @@ public class PressureFilter extends FilterFramework
 				pipe(frame.temperature, "double", 1);
 				pipe(5, "int", 1);
 				pipe(frame.attitude, "double", 1);		
+				pipe(6, "int", 1);
+				if (frame.wildPoint)
+				{
+					pipe(1.0, "double", 1);//is a wild point - send 1
+				}
+				else
+				{
+					pipe(0.0, "double", 1);//is not a wild point - send 0
+				}
+				
+				
 				
 				if (frame.wildPoint) {
 					// send frame.wildPSI to Wild Point file

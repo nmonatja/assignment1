@@ -57,6 +57,7 @@ public class SinkFilter extends FilterFramework
 		long alt = 0;
 		long pressure = 0;
 		long temperature = 0;
+		long wildmeasure = 0; 
 		int id;							// This is the measurement id
 		int i;							// This is a loop counter
 		String output = null;
@@ -183,16 +184,41 @@ public class SinkFilter extends FilterFramework
 						// print out the file 
 						// not 100% happy with this formatting yet
 						temperature = measurement;
-						output = TimeStampFormat.format(TimeStamp.getTime()) + "\t\t" 
-								+ TempFormat.format(Double.longBitsToDouble(temperature)) + "\t\t\t" 
-								+ AltitudeFormat.format(Double.longBitsToDouble(alt)) + "\t\t" 
-								+ PressureFormat.format(Double.longBitsToDouble(pressure));
-						//System.out.println(output);
-						writer.write(output);
-						writer.newLine();
+						
 
 					} // if
 
+					
+					
+					if ( id == 6 )
+					{
+						//System.out.print( TimeStampFormat.format(TimeStamp.getTime()) + " ID = " + id + " " + Double.longBitsToDouble(measurement));
+						// print out the file 
+						// not 100% happy with this formatting yet
+						wildmeasure = measurement;
+
+						if (Double.longBitsToDouble(wildmeasure) == (double)0)//check if this is a wild point or not, if a wild point, print an '*' next to the pressure value
+						{
+							output = TimeStampFormat.format(TimeStamp.getTime()) + "\t\t" 
+								+ TempFormat.format(Double.longBitsToDouble(temperature)) + "\t\t\t" 
+								+ AltitudeFormat.format(Double.longBitsToDouble(alt)) + "\t\t" 
+								+ PressureFormat.format(Double.longBitsToDouble(pressure));
+							System.out.println(output);
+							writer.write(output);
+							writer.newLine();
+						}
+						else
+						{
+							output = TimeStampFormat.format(TimeStamp.getTime()) + "\t\t" 
+									+ TempFormat.format(Double.longBitsToDouble(temperature)) + "\t\t\t" 
+									+ AltitudeFormat.format(Double.longBitsToDouble(alt)) + "\t\t" 
+									+ PressureFormat.format(Double.longBitsToDouble(pressure)) + "*";
+								System.out.println(output);
+								writer.write(output);
+								writer.newLine();
+						}
+
+					} // if
 					//System.out.print( "\n" );
 				
 
