@@ -194,7 +194,6 @@ public class SinkFilter extends FilterFramework
 					{
 						//System.out.print( TimeStampFormat.format(TimeStamp.getTime()) + " ID = " + id + " " + Double.longBitsToDouble(measurement));
 						// print out the file 
-						// not 100% happy with this formatting yet
 						wildmeasure = measurement;
 
 						if (Double.longBitsToDouble(wildmeasure) == (double)0)//check if this is a wild point or not, if a wild point, print an '*' next to the pressure value
@@ -203,17 +202,17 @@ public class SinkFilter extends FilterFramework
 								+ TempFormat.format(Double.longBitsToDouble(temperature)) + "\t\t\t" 
 								+ AltitudeFormat.format(Double.longBitsToDouble(alt)) + "\t\t" 
 								+ PressureFormat.format(Double.longBitsToDouble(pressure));
-							System.out.println(output);
+							//System.out.println(output);
 							writer.write(output);
 							writer.newLine();
 						}
-						else
+						else //it's a wild point, print an '*'
 						{
 							output = TimeStampFormat.format(TimeStamp.getTime()) + "\t\t" 
 									+ TempFormat.format(Double.longBitsToDouble(temperature)) + "\t\t\t" 
 									+ AltitudeFormat.format(Double.longBitsToDouble(alt)) + "\t\t" 
 									+ PressureFormat.format(Double.longBitsToDouble(pressure)) + "*";
-								System.out.println(output);
+								//System.out.println(output);
 								writer.write(output);
 								writer.newLine();
 						}
