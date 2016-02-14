@@ -5,7 +5,7 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
-*       1.1 Feb 07,2016 - N.Hoskeri. Created Framework for altitude filter
+*       1.1 Feb 07,2016 -   Created Framework for altitude filter (NLH)
 * Description:
 *
 * This filter merges operates on the altitude measurements
@@ -15,48 +15,60 @@
 * Internal Methods: None
 *
 ******************************************************************************************************************/
-import java.io.*;
-import java.util.*;                                 		// This class is used to interpret time words
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;                              // This class is used to format and write time in a string format.
 import java.text.DecimalFormat;
 
 public class AltitudeFilter extends FilterFramework
 {
-        FrameList                       DtFrmList           = new FrameList();
-        
-        private final Boolean           OutputPort2_text    = true;
-        private final Double            AltitudeFilterVal   = new Double(10000);
-        
-	public void run()
+    private final Boolean           OutputPort2_text    = false;
+    private final Double            AltitudeFilterVal   = new Double(10000);
+
+    /***************************************************************************
+	* CONCRETE METHOD:: run
+	* Purpose: This is actually an abstract method defined by Thread. It is called
+	* when the thread is started by calling the Thread.start() method. In this
+	* case, the run() is overridden by the filter programmer using
+	* this framework superclass
+	*
+	* Arguments: void
+	*
+	* Returns: void
+	*
+	* Exceptions: 
+	*
+	****************************************************************************/    
+
+    @Override
+    public void run()
     {
-		// Next we write a message to the terminal to let the world know we are alive...
-		System.out.print( "\n" + this.getName() + "::Altitude Filter Reading ");
-                
-               
-                /*Print console header*/
-                String headerStr = "Source" + "\t" +
-                                    "TimeStamp"     + "\t\t" +
-                                    "Velocity"      + "\t" +
-                                    "Altitude"      + "\t" +
-                                    "Pressure"      + "\t" +
-                                    "Temperature"   + "\t" +
-                                    "Attitude"      + "\n";
+        // Next we write a message to the terminal to let the world know we are alive...
+        System.out.print( "\n" + this.getName() + "::Altitude Filter Reading ");
 
-                DbgTrace(headerStr);
-                PipeOutByteBuffer(Serialize(headerStr), 2);
-                PipeOutByteBuffer(Serialize("====================================================================================================================\n"), 2);
-                
-                DbgTrace( "\n" + this.getName() + "::Processing Input Port 1");
-                ProcessInputChannel(1);
-
-                
-                /*Close the output ports*/
-                CloseOutputPorts(1);
-                CloseOutputPorts(2);
-		
-   } // run
+        DbgTrace( "\n" + this.getName() + "::Processing Input Port 1");
         
+        ProcessInputChannel(1);
+
+        /*Close the output ports*/
+        CloseOutputPorts(1);
+        CloseOutputPorts(2);
+		
+    } // run
+    
+/***************************************************************************
+	* CONCRETE METHOD:: FilterFrame
+	* Purpose: Method to filter the altitude measurements and convert units 
+        *           from feet to meters 
+	*
+	* Arguments: 
+        *           Double filterVal=> The altitude value to filter the altitude measurements in the frame
+        *           Frame frame     =>  The frame (collection of measurements sampled at a certain time)
+	*
+	* Returns: void
+	*
+	* Exceptions: 
+	*
+	****************************************************************************/    
 void  FilterFrame(Double filterVal, Frame frame)
     {
         String outputStr;
@@ -65,8 +77,13 @@ void  FilterFrame(Double filterVal, Frame frame)
        
         Measurement m = frame.find(altitudeParamID);
         
+        Double altF   = Double.longBitsToDouble(m.paramVal);
+        Double altM   = altF * 0.3048;
         
-        if(Double.longBitsToDouble(m.paramVal) > filterVal)
+        /*Convert to meters*/
+        m.paramVal = Double.doubleToRawLongBits(altM);
+        
+        if(altF > filterVal)
         {
             /*Only pass through output port 1, the frames which match criteria*/
             PipeOutFrame(frame, 1);
@@ -74,11 +91,10 @@ void  FilterFrame(Double filterVal, Frame frame)
         else
         {
             /*Send the rest of the frames to output port 2, which is connected to a sink filter to log the data*/
-            
-            outputStr = PrintFrame(frame);
             if(OutputPort2_text == true)
             {
                 /*Send formatted text output*/    
+                outputStr = PrintFrame(frame);
                 PipeOutByteBuffer(Serialize(outputStr), 2);
             }
             else
@@ -88,16 +104,28 @@ void  FilterFrame(Double filterVal, Frame frame)
             }
         }        
     }            
+/***************************************************************************
+	* CONCRETE METHOD:: ProcessInputChannel
+	* Purpose: Process the input channel and assemble the stream of bytes into a frame 
+	*
+	* Arguments: 
+        *           int portNum=> The input port to read the data stream. 
+	*
+	* Returns: void
+	*
+	* Exceptions: EndOfStreamException
+	*
+	****************************************************************************/    
         
     public void ProcessInputChannel(int portNum)
     {
-        byte databyte = 0;				// The byte of data read from input port 1
+        byte databyte;				// The byte of data read from input port 1
         int bytesread = 0;                             // Number of bytes read from input port 1
         int byteswritten = 0;
         
         int idLength = 4;
-        int id = 0;
-        long measurement = 0;
+        int id;
+        long measurement;
         int measurementLength = 8;
         
         Boolean isFirstFrame = true;
@@ -146,9 +174,6 @@ void  FilterFrame(Double filterVal, Frame frame)
                     /*This is a new frame, insert the previous frame in the list. Dont do it if it is the very first frame*/
                     if(!isFirstFrame)
                     {
-                        /*Insert the new frame in the frame list*/
-                        DtFrmList.add(f);
-
                         /*Filter the new frame*/
                         FilterFrame(AltitudeFilterVal, f);
                         
@@ -156,11 +181,8 @@ void  FilterFrame(Double filterVal, Frame frame)
                         
                     }
                     isFirstFrame = false;
-                    
-                    
-                    
                 }
-                Measurement m = new Measurement(new Integer(id), new Long(measurement), true);
+                Measurement m = new Measurement(id, measurement, true);
                 
                 /*Add the measurement to the frame*/
                 f.add(m);
@@ -168,16 +190,12 @@ void  FilterFrame(Double filterVal, Frame frame)
                 
             catch (FilterFramework.EndOfStreamException e)
             {
-                /*Insert Final frame in the frame list*/
-                DtFrmList.add(f);
-                
-                /*Filter the new frame*/
+                /*Filter the final frame*/
                 FilterFrame(AltitudeFilterVal, f);
 
-                
                 CloseInputPorts(portNum);
 
-                DbgTrace( "\n" + this.getName() + "::Pressure Filter Exiting; bytes read from channel 1: " + bytesread + " bytes Written:" + byteswritten);
+                DbgTrace( "\n" + this.getName() + "::Altitude Filter Exiting; bytes read from channel 1: " + bytesread + " bytes Written:" + byteswritten);
                 break;
             } // catch
 
@@ -185,12 +203,41 @@ void  FilterFrame(Double filterVal, Frame frame)
 
     }
     
+    /***************************************************************************
+    * CONCRETE METHOD:: PipeOutFrame
+    * Purpose: Convert the input frame into a stream of bytes and output to the 
+    *           specified output port
+    *
+    * Arguments: 
+    *               Frame frame => Frame - set of measurements sampled at one time.
+    *               int outPort => Port to output byte stream
+    *           
+    *
+    * Returns: void
+    *
+    * Exceptions: 
+    *
+    ****************************************************************************/    
     void  PipeOutFrame(Frame frame, int outPort)
     {
         ByteBuffer buffer = frame.Serialize();
         PipeOutByteBuffer( buffer, outPort);
     }
-        
+    
+    /***************************************************************************
+    * CONCRETE METHOD:: PipeOutByteBuffer
+    * Purpose: output stream of bytes (ByteBuffer) to the specified output port
+    *
+    * Arguments: 
+    *               ByteBuffer frame => Stream of bytes
+    *               int outPort => Port to output byte stream
+    *           
+    *
+    * Returns: void
+    *
+    * Exceptions: 
+    *
+    ****************************************************************************/    
     void PipeOutByteBuffer(ByteBuffer buffer, int outPort)
     {
         byte[] bufferArray = buffer.array();
@@ -200,6 +247,19 @@ void  FilterFrame(Double filterVal, Frame frame)
         }
     }
     
+    /***************************************************************************
+    * CONCRETE METHOD:: Serialize
+    * Purpose: Convert a string object to a ByteBuffer
+    *
+    * Arguments: 
+    *               String  str => String 
+    *           
+    *
+    * Returns: ByteBuffer - Buffer of bytes
+    *
+    * Exceptions: 
+    *
+    ****************************************************************************/  
     ByteBuffer Serialize(String str)
     {
         ByteBuffer buffer = ByteBuffer.allocate(str.length());
@@ -207,6 +267,19 @@ void  FilterFrame(Double filterVal, Frame frame)
         return (buffer);
     }
     
+    /***************************************************************************
+    * CONCRETE METHOD:: PrintFrame
+    * Purpose: Format a frame to a string of bytes in the desired output format
+    *
+    * Arguments: 
+    *               Frame frame => Frame - collection of measurements taken at a one time 
+    *           
+    *
+    * Returns: String - Formatted String of bytes created from a frame
+    *
+    * Exceptions: 
+    *
+    ****************************************************************************/
     String PrintFrame(Frame frame)
     {
         SimpleDateFormat    timestampFormat = new SimpleDateFormat("yyyy:dd:hh:mm:ss");
@@ -216,7 +289,7 @@ void  FilterFrame(Double filterVal, Frame frame)
         DecimalFormat       velocityFormat  = new DecimalFormat("#000.00000");
         DecimalFormat       attitudeFormat  = new DecimalFormat("#000.00000");
 
-        String outputStr    = "***";
+        String outputStr;
         String tsStr        = "***";
         String tempStr      = "***";
         String altStr       = "***";
@@ -264,9 +337,8 @@ void  FilterFrame(Double filterVal, Frame frame)
             }
         }
         
-        outputStr = frame.getSourceChannel()+ "\t" + 
-                    tsStr                   + "\t" + 
-                    velStr                  + "\t" + 
+        outputStr = tsStr                   + "\t" + 
+                    velStr                  + "\t\t" + 
                     altStr                  + "\t" + 
                     pressStr                + "\t" + 
                     tempStr                 + "\t" + 
@@ -276,7 +348,20 @@ void  FilterFrame(Double filterVal, Frame frame)
         
         return(outputStr);
     }
-    
+    /***************************************************************************
+    * CONCRETE METHOD:: DbgTrace
+    * Purpose: Output Debug trace to stdout. Only prints to stdout of configured 
+    *           with DbgTraceOn = true
+    *
+    * Arguments: 
+    *               String => String containing formatted text output
+    *           
+    *
+    * Returns: void 
+    *
+    * Exceptions: 
+    *
+    ****************************************************************************/
     void DbgTrace(String output)
     {
         if(DbgTraceOn)
@@ -284,5 +369,4 @@ void  FilterFrame(Double filterVal, Frame frame)
             System.out.print(output);
         }
     }
-
-} // TimeAlignFilter
+} // AltitudeFilter

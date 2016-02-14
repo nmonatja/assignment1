@@ -4,7 +4,7 @@
 * Project: Assignment 1
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
-*	1.0 November 2008 - Model for Measurement, Frames and Frame List
+*	1.0 November 2008 - Created Model for Measurement, Frames and Frame List (NLH)
 * Description:
 *
 * Class for creating and operating on measurements, frames and frame lists
@@ -26,12 +26,13 @@
  *
  * @author FZ4432
  */
-import java.util.ArrayList;
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Objects;
-class Measurement
+    import java.util.ArrayList;
+    import java.nio.ByteBuffer;
+    import java.util.Collections;
+    import java.util.Comparator;
+    import java.util.Objects;
+    
+    class Measurement
     {
         Integer paramID;
         Long    paramVal;
@@ -42,6 +43,14 @@ class Measurement
             paramID     = id;
             paramVal    = value;
             validity    = isValid;
+        }
+        
+        Measurement(Integer id, Double value, Boolean isValid)
+        {
+            paramID     = id;
+            paramVal = Double.doubleToRawLongBits(value);
+            validity    = isValid;
+        
         }
         Measurement()
         {
@@ -55,6 +64,16 @@ class Measurement
             paramID  = -1;
             paramVal = new Long(0);
             validity = false;
+        }
+        
+        public Boolean IsValid()
+        {
+            return validity;
+        }
+        
+        public void SetValidity(Boolean isValid)
+        {
+            validity = isValid;
         }
         
         public ByteBuffer Serialize()

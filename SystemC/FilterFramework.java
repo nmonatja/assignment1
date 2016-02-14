@@ -5,8 +5,8 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Initial rewrite of original assignment 1 (ajl).
-*       1.1 Feb 07,2016 - N.Hoskeri : Updated class to have two input ports and 2 output ports
-*                                     Any input port can be connected to any output port 
+*       1.1 Feb 07,2016 -   Updated class to have two input ports and 2 output ports
+*                           Any input port can be connected to any output port (NLH)
 * Description:
 *
 * This superclass defines a skeletal filter framework that defines a filter in terms of the input and output
@@ -39,330 +39,319 @@ import java.io.*;
 
 public class FilterFramework extends Thread
 {
-	// Define filter input and output ports
+    // Define filter input and output ports
 
-	private PipedInputStream InputReadPort_1 = new PipedInputStream();
-	private PipedOutputStream OutputWritePort_1 = new PipedOutputStream();
+    private PipedInputStream InputReadPort_1 = new PipedInputStream();
+    private PipedOutputStream OutputWritePort_1 = new PipedOutputStream();
+
+    private PipedInputStream InputReadPort_2 = new PipedInputStream();
+    private PipedOutputStream OutputWritePort_2 = new PipedOutputStream();
+
+    // The following reference to a filter is used because java pipes are able to reliably
+    // detect broken pipes on the input port of the filter. This variable will point to
+    // the previous filter in the network and when it dies, we know that it has closed its
+    // output pipe and will send no more data.
+
+    private FilterFramework InputFilter_1 = null;
+    private FilterFramework InputFilter_2 = null;
+
+    boolean   DbgTraceOn            = false;
         
-        private PipedInputStream InputReadPort_2 = new PipedInputStream();
-	private PipedOutputStream OutputWritePort_2 = new PipedOutputStream();
 
-	// The following reference to a filter is used because java pipes are able to reliably
-	// detect broken pipes on the input port of the filter. This variable will point to
-	// the previous filter in the network and when it dies, we know that it has closed its
-	// output pipe and will send no more data.
+    /***************************************************************************
+    * InnerClass:: EndOfStreamExeception
+    * Purpose: This
+    *
+    *
+    *
+    * Arguments: none
+    *
+    * Returns: none
+    *
+    * Exceptions: none
+    *
+    ****************************************************************************/
 
-	private FilterFramework InputFilter_1 = null;
-        private FilterFramework InputFilter_2 = null;
-        
-        boolean   DbgTraceOn            = false;
-        
+    class EndOfStreamException extends Exception 
+    {
+        static final long serialVersionUID = 0; // the version for serializing
 
-	/***************************************************************************
-	* InnerClass:: EndOfStreamExeception
-	* Purpose: This
-	*
-	*
-	*
-	* Arguments: none
-	*
-	* Returns: none
-	*
-	* Exceptions: none
-	*
-	****************************************************************************/
+        EndOfStreamException () { super(); }
 
-	class EndOfStreamException extends Exception {
-		
-		static final long serialVersionUID = 0; // the version for serializing
-
-		EndOfStreamException () { super(); }
-
-		EndOfStreamException(String s) { super(s); }
-
-	} // class
+        EndOfStreamException(String s) { super(s); }
+    } // class
 
 
-	/***************************************************************************
-	* CONCRETE METHOD:: Connect
-	* Purpose: This method connects filters to each other. All connections are
-	* through the inputport of each filter. That is each filter's inputport is
-	* connected to another filter's output port through this method.
-	*
-	* Arguments:
-	* 	FilterFramework - this is the filter that this filter will connect to.
-        *       inPort : Input port of this filter
-        *       outPort : Output port of the specified filter
-        *       Filter : Filter whose output port is to be connected to this input port
-	*
-	* Returns: void
-	*
-	* Exceptions: IOException
-	*
-	****************************************************************************/
+    /***************************************************************************
+    * CONCRETE METHOD:: Connect
+    * Purpose: This method connects filters to each other. All connections are
+    * through the inputport of each filter. That is each filter's inputport is
+    * connected to another filter's output port through this method.
+    *
+    * Arguments:
+    * 	FilterFramework - this is the filter that this filter will connect to.
+    *       inPort : Input port of this filter
+    *       outPort : Output port of the specified filter
+    *       Filter : Filter whose output port is to be connected to this input port
+    *
+    * Returns: void
+    *
+    * Exceptions: IOException
+    *
+    ****************************************************************************/
 
-	void Connect( FilterFramework Filter, int outPort, int inPort )
-	{
-		try
-		{
-			// Connect this filter's input to the upstream pipe's output stream
-                        
-                        switch(inPort)
-                        {    
-                            case 1:
-                            {
-                                switch(outPort)
-                                {
-                                    case 1:
-                                    {
-                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
-                                        InputFilter_1 = Filter;
-                                        break;
-                                    }
-                                    case 2:
-                                    {
-                                        InputReadPort_1.connect( Filter.OutputWritePort_2 );
-                                        InputFilter_1 = Filter;
-                                        break;
-                                    }
-                                    default:
-                                    {
-                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
-                                        InputFilter_1 = Filter;
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                            case 2:
-                            {
-                                switch(outPort)
-                                {
-                                    case 1:
-                                    {
-                                        InputReadPort_2.connect( Filter.OutputWritePort_1 );
-                                        InputFilter_2 = Filter;
-                                        break;
-                                    }
-                                    case 2:
-                                    {
-                                        InputReadPort_2.connect( Filter.OutputWritePort_2 );
-                                        InputFilter_2 = Filter;
-                                        break;
-                                    }
-                                    default:
-                                    {
-                                        InputReadPort_2.connect( Filter.OutputWritePort_1 );
-                                        InputFilter_2 = Filter;
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                            default:
-                            {
-                                switch(outPort)
-                                {
-                                    case 1:
-                                    {
-                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
-                                        InputFilter_1 = Filter;
-                                        break;
-                                    }
-                                    case 2:
-                                    {
-                                        InputReadPort_1.connect( Filter.OutputWritePort_2 );
-                                        InputFilter_2 = Filter;
-                                        break;
-                                    }
-                                    default:
-                                    {
-                                        InputReadPort_1.connect( Filter.OutputWritePort_1 );
-                                        InputFilter_1 = Filter;
-                                        break;
-                                    }
-                                }
-                            }
+    void Connect( FilterFramework Filter, int outPort, int inPort )
+    {
+        try
+        {
+            // Connect this filter's input to the upstream pipe's output stream
+
+            switch(inPort)
+            {    
+                case 1:
+                {
+                    switch(outPort)
+                    {
+                        case 1:
+                        {
+                            InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                            InputFilter_1 = Filter;
+                            break;
                         }
-		} // try
-
-		catch( Exception Error )
-		{
-			System.out.println( "\n" + this.getName() + " FilterFramework error connecting::"+ Error );
-
-		} // catch
-
-	} // Connect
-
-	/***************************************************************************
-	* CONCRETE METHOD:: ReadFilterInputPort
-	* Purpose: This method reads data from the input port one byte at a time.
-	*
-	* Arguments: void
-	*
-	* Returns: byte of data read from the input port of the filter.
-	*
-	* Exceptions: IOExecption, EndOfStreamException (rethrown)
-	*
-	****************************************************************************/
-
-	byte ReadFilterInputPort(int port_num) throws EndOfStreamException
-	{
-		byte datum = 0;
-                PipedInputStream InputReadPort = InputReadPort_1;
-                
-                if(port_num == 1)
-                {
-                    InputReadPort = InputReadPort_1;
+                        case 2:
+                        {
+                            InputReadPort_1.connect( Filter.OutputWritePort_2 );
+                            InputFilter_1 = Filter;
+                            break;
+                        }
+                        default:
+                        {
+                            InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                            InputFilter_1 = Filter;
+                            break;
+                        }
+                    }
+                    break;
                 }
-                else if(port_num == 2)
+                case 2:
                 {
-                    InputReadPort = InputReadPort_2;
+                    switch(outPort)
+                    {
+                        case 1:
+                        {
+                            InputReadPort_2.connect( Filter.OutputWritePort_1 );
+                            InputFilter_2 = Filter;
+                            break;
+                        }
+                        case 2:
+                        {
+                            InputReadPort_2.connect( Filter.OutputWritePort_2 );
+                            InputFilter_2 = Filter;
+                            break;
+                        }
+                        default:
+                        {
+                            InputReadPort_2.connect( Filter.OutputWritePort_1 );
+                            InputFilter_2 = Filter;
+                            break;
+                        }
+                    }
+                    break;
                 }
-
-		/***********************************************************************
-		* Since delays are possible on upstream filters, we first wait until
-		* there is data available on the input port. We check,... if no data is
-		* available on the input port we wait for a quarter of a second and check
-		* again. Note there is no timeout enforced here at all and if upstream
-		* filters are deadlocked, then this can result in infinite waits in this
-		* loop. It is necessary to check to see if we are at the end of stream
-		* in the wait loop because it is possible that the upstream filter completes
-		* while we are waiting. If this happens and we do not check for the end of
-		* stream, then we could wait forever on an upstream pipe that is long gone.
-		* Unfortunately Java pipes do not throw exceptions when the input pipe is
-		* broken.
-		***********************************************************************/
-		try
-		{
-			while (InputReadPort.available()==0 )
-			{
-				if (EndOfInputStream(port_num))
-				{
-					throw new EndOfStreamException("End of input stream reached");
-
-				} //if
-
-				sleep(250);
-
-			} // while
-
-		} // try
-
-		catch( EndOfStreamException Error )
-		{
-			throw Error;
-
-		} // catch
-
-		catch( Exception Error )
-		{
-			System.out.println( "\n" + this.getName() + " Error in read port wait loop::" + Error );
-
-		} // catch
-
-		/***********************************************************************
-		* If at least one byte of data is available on the input
-		* pipe we can read it. We read and write one byte to and from ports.
-		***********************************************************************/
-
-		try
-		{
-			datum = (byte)InputReadPort.read();
-			return datum;
-
-		} // try
-
-		catch( Exception Error )
-		{
-			System.out.println( "\n" + this.getName() + " Pipe read error::" + Error );
-			return datum;
-
-		} // catch
-
-	} // ReadFilterPort
-
-	/***************************************************************************
-	* CONCRETE METHOD:: WriteFilterOutputPort
-	* Purpose: This method writes data to the output port one byte at a time.
-	*
-	* Arguments:
-	* 	byte datum - This is the byte that will be written on the output port.of
-	*	the filter.
-	*
-	* Returns: void
-	*
-	* Exceptions: IOException
-	*
-	****************************************************************************/
-
-	void WriteFilterOutputPort(int port_num, byte datum)
-	{
-                PipedOutputStream OutputWritePort = OutputWritePort_1;
-                
-                if(port_num == 1)
+                default:
                 {
-                    OutputWritePort = OutputWritePort_1;
+                    switch(outPort)
+                    {
+                        case 1:
+                        {
+                            InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                            InputFilter_1 = Filter;
+                            break;
+                        }
+                        case 2:
+                        {
+                            InputReadPort_1.connect( Filter.OutputWritePort_2 );
+                            InputFilter_2 = Filter;
+                            break;
+                        }
+                        default:
+                        {
+                            InputReadPort_1.connect( Filter.OutputWritePort_1 );
+                            InputFilter_1 = Filter;
+                            break;
+                        }
+                    }
                 }
-                else if(port_num == 2)
+            }
+        } // try
+        catch( Exception Error )
+        {
+            System.out.println( "\n" + this.getName() + " FilterFramework error connecting::"+ Error );
+        } // catch
+    } // Connect
+
+    /***************************************************************************
+    * CONCRETE METHOD:: ReadFilterInputPort
+    * Purpose: This method reads data from the input port one byte at a time.
+    *
+    * Arguments: void
+    *
+    * Returns: byte of data read from the input port of the filter.
+    *
+    * Exceptions: IOExecption, EndOfStreamException (rethrown)
+    *
+    ****************************************************************************/
+
+    byte ReadFilterInputPort(int port_num) throws EndOfStreamException
+    {
+        byte datum = 0;
+        PipedInputStream InputReadPort = InputReadPort_1;
+
+        if(port_num == 1)
+        {
+            InputReadPort = InputReadPort_1;
+        }
+        else if(port_num == 2)
+        {
+            InputReadPort = InputReadPort_2;
+        }
+
+        /***********************************************************************
+        * Since delays are possible on upstream filters, we first wait until
+        * there is data available on the input port. We check,... if no data is
+        * available on the input port we wait for a quarter of a second and check
+        * again. Note there is no timeout enforced here at all and if upstream
+        * filters are deadlocked, then this can result in infinite waits in this
+        * loop. It is necessary to check to see if we are at the end of stream
+        * in the wait loop because it is possible that the upstream filter completes
+        * while we are waiting. If this happens and we do not check for the end of
+        * stream, then we could wait forever on an upstream pipe that is long gone.
+        * Unfortunately Java pipes do not throw exceptions when the input pipe is
+        * broken.
+        ***********************************************************************/
+        try
+        {
+                while (InputReadPort.available()==0 )
                 {
-                    OutputWritePort = OutputWritePort_2;
-                }
-                
-		try
-		{
-                        OutputWritePort.write((int) datum );
-		   	OutputWritePort.flush();
+                        if (EndOfInputStream(port_num))
+                        {
+                                throw new EndOfStreamException("End of input stream reached");
 
-		} // try
+                        } //if
 
-		catch( Exception Error )
-		{
-			System.out.println("\n" + this.getName() + " Pipe write error::" + Error );
+                        sleep(250);
 
-		} // catch
+                } // while
 
-		return;
+        } // try
 
-	} // WriteFilterPort
+        catch( EndOfStreamException Error )
+        {
+                throw Error;
 
-	/***************************************************************************
-	* CONCRETE METHOD:: EndOfInputStream
-	* Purpose: This method is used within this framework which is why it is private
-	* It returns a true when there is no more data to read on the input port of
-	* the instance filter. What it really does is to check if the upstream filter
-	* is still alive. This is done because Java does not reliably handle broken
-	* input pipes and will often continue to read (junk) from a broken input pipe.
-	*
-	* Arguments: void
-	*
-	* Returns: A value of true if the previous filter has stopped sending data,
-	*		   false if it is still alive and sending data.
-	*
-	* Exceptions: none
-	*
-	****************************************************************************/
+        } // catch
 
-	private boolean EndOfInputStream(int filterNum)
-	{
-                FilterFramework InputFilter = InputFilter_1;
-                if(filterNum == 1)
-                {
-                    InputFilter = InputFilter_1;
-                }
-                else if(filterNum == 2)
-                {
-                    InputFilter = InputFilter_2;
-                }
-		if (InputFilter.isAlive())
-		{
-			return false;
+        catch( Exception Error )
+        {
+                System.out.println( "\n" + this.getName() + " Error in read port wait loop::" + Error );
 
-		} else {
+        } // catch
 
-			return true;
+        /***********************************************************************
+        * If at least one byte of data is available on the input
+        * pipe we can read it. We read and write one byte to and from ports.
+        ***********************************************************************/
 
-		} // if
+        try
+        {
+                datum = (byte)InputReadPort.read();
+                return datum;
+
+        } // try
+
+        catch( Exception Error )
+        {
+                System.out.println( "\n" + this.getName() + " Pipe read error::" + Error );
+                return datum;
+
+        } // catch
+
+    } // ReadFilterPort
+
+    /***************************************************************************
+    * CONCRETE METHOD:: WriteFilterOutputPort
+    * Purpose: This method writes data to the output port one byte at a time.
+    *
+    * Arguments:
+    * 	byte datum - This is the byte that will be written on the output port.of
+    *	the filter.
+    *
+    * Returns: void
+    *
+    * Exceptions: IOException
+    *
+    ****************************************************************************/
+    void WriteFilterOutputPort(int port_num, byte datum)
+    {
+        PipedOutputStream OutputWritePort = OutputWritePort_1;
+
+        if(port_num == 1)
+        {
+            OutputWritePort = OutputWritePort_1;
+        }
+        else if(port_num == 2)
+        {
+            OutputWritePort = OutputWritePort_2;
+        }
+        try
+        {
+            OutputWritePort.write((int) datum );
+            OutputWritePort.flush();
+        } // try
+        catch( Exception Error )
+        {
+            System.out.println("\n" + this.getName() + " Pipe write error::" + Error );
+        } // catch
+
+    } // WriteFilterPort
+
+    /***************************************************************************
+    * CONCRETE METHOD:: EndOfInputStream
+    * Purpose: This method is used within this framework which is why it is private
+    * It returns a true when there is no more data to read on the input port of
+    * the instance filter. What it really does is to check if the upstream filter
+    * is still alive. This is done because Java does not reliably handle broken
+    * input pipes and will often continue to read (junk) from a broken input pipe.
+    *
+    * Arguments: void
+    *
+    * Returns: A value of true if the previous filter has stopped sending data,
+    *		   false if it is still alive and sending data.
+    *
+    * Exceptions: none
+    *
+    ****************************************************************************/
+
+    private boolean EndOfInputStream(int filterNum)
+    {
+            FilterFramework InputFilter = InputFilter_1;
+            if(filterNum == 1)
+            {
+                InputFilter = InputFilter_1;
+            }
+            else if(filterNum == 2)
+            {
+                InputFilter = InputFilter_2;
+            }
+            if (InputFilter.isAlive())
+            {
+                    return false;
+
+            } else {
+
+                    return true;
+
+            } // if
 
 	} // EndOfInputStream
 
@@ -382,81 +371,80 @@ public class FilterFramework extends Thread
 
 	void ClosePorts()
 	{
-		try
-		{
-			InputReadPort_1.close();
-                        InputReadPort_2.close();
-			OutputWritePort_1.close();
-                        OutputWritePort_2.close();
+            try
+            {
+                    InputReadPort_1.close();
+                    InputReadPort_2.close();
+                    OutputWritePort_1.close();
+                    OutputWritePort_2.close();
 
-		}
-		catch( Exception Error )
-		{
-			System.out.println( "\n" + this.getName() + " ClosePorts error::" + Error );
+            }
+            catch( Exception Error )
+            {
+                    System.out.println( "\n" + this.getName() + " ClosePorts error::" + Error );
 
-		} // catch
-
+            } // catch
 	} // ClosePorts
         
         void CloseInputPorts(int portNum)
 	{
-		try
-		{
-                    switch(portNum)
+            try
+            {
+                switch(portNum)
+                {
+                    case 1:
                     {
-                        case 1:
-                        {
-                            InputReadPort_1.close();
-                            break;
-                        }
-                        case 2:
-                        {
-                            InputReadPort_2.close();
-                            break;
-                        }
-                        default:
-                        {
-                            break;
-                        }
-                            
+                        InputReadPort_1.close();
+                        break;
                     }
-		}
-		catch( Exception Error )
-		{
-			System.out.println( "\n" + this.getName() + " CloseInputPorts error::" + Error );
+                    case 2:
+                    {
+                        InputReadPort_2.close();
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
 
-		} // catch
+                }
+            }
+            catch( Exception Error )
+            {
+                    System.out.println( "\n" + this.getName() + " CloseInputPorts error::" + Error );
+
+            } // catch
 
 	} // CloseInputPorts
         
         void CloseOutputPorts(int portNum)
 	{
-		try
-		{
-                    switch(portNum)
+            try
+            {
+                switch(portNum)
+                {
+                    case 1:
                     {
-                        case 1:
-                        {
-                            OutputWritePort_1.close();
-                            break;
-                        }
-                        case 2:
-                        {
-                            OutputWritePort_2.close();
-                            break;
-                        }
-                        default:
-                        {
-                            break;
-                        }
-                            
+                        OutputWritePort_1.close();
+                        break;
                     }
-		}
-		catch( Exception Error )
-		{
-			System.out.println( "\n" + this.getName() + " CloseOutputPorts error::" + Error );
+                    case 2:
+                    {
+                        OutputWritePort_2.close();
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
 
-		} // catch
+                }
+            }
+            catch( Exception Error )
+            {
+                    System.out.println( "\n" + this.getName() + " CloseOutputPorts error::" + Error );
+
+            } // catch
 
 	} // CloseOutputPorts
 
@@ -477,9 +465,9 @@ public class FilterFramework extends Thread
 
 	public void run()
     {
-		// The run method should be overridden by the subordinate class. Please
-		// see the example applications provided for more details.
+        // The run method should be overridden by the subordinate class. Please
+        // see the example applications provided for more details.
 
-	} // run
+    } // run
 
 } // FilterFramework class

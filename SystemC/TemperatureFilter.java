@@ -1,14 +1,14 @@
 /******************************************************************************************************************
-* File:TimeAlignFilter.java
+* File:TemperatureFilter.java
 * Course: 17655
 * Project: Assignment 1
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
-*       1.1 Feb 07,2016 -   Created Time Align Filter (NLH)
+*       1.1 Feb 07,2016 - Created Framework for Temperature filter (NLH)
 * Description:
 *
-* This filter merges inputs from two input ports, merges sorts the data based on timestamp and pipes the data out of the output port
+* This filter merges operates on the altitude measurements
 *
 * Parameters: 		None
 *
@@ -19,60 +19,43 @@ import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;                              // This class is used to format and write time in a string format.
 import java.text.DecimalFormat;
 
-public class TimeAlignFilter extends FilterFramework
+public class TemperatureFilter extends FilterFramework
 {
-    FrameList   DtFrmList           = new FrameList();
-    Integer     TimeStampParamID    = 0;
-
     @Override
     public void run()
     {
         // Next we write a message to the terminal to let the world know we are alive...
-        System.out.print( "\n" + this.getName() + "::Time Align Reading ");
+        System.out.print( "\n" + this.getName() + "::Temperature Filter Reading ");
 
-        DbgTrace( "\n" + this.getName() + "::Processing Source 1");
+        DbgTrace( "\n" + this.getName() + "::Processing Input Port 1");
         ProcessInputChannel(1);
 
-        DbgTrace( "\n" + this.getName() + "::Processing Source 2");
-        ProcessInputChannel(2);
-
-        /*Sort Data Frame List*/
-        DbgTrace( "\n" + this.getName() + "::Sorting merged frame list");
-        DtFrmList.Sort(TimeStampParamID);               /*Sort the list on time stamp*/
-
-        DbgTrace( "\n" + this.getName() + "::Piping out merge and sortedframe data" + "\n");
-
-
-        /*Print console header*/
-        DbgTrace(   "Source"        + "\t" +
-                    "TimeStamp"     + "\t\t" +
-                    "Velocity"      + "\t" +
-                    "Altitude"      + "\t" +
-                    "Pressure"      + "\t" +
-                    "Temperature"   + "\t" +
-                    "Attitude"
-                );
-
-        DbgTrace( "\n" );
-        /*Pipe Out Frame List*/
-
-        for(int i=0; i< DtFrmList.size();i++)
-        {
-            Frame f = DtFrmList.get(i);
-
-            //if(f.SourceChannel == 1)
-            {
-                PipeOutFrame(f, 1);
-
-                PrintFrame(f);
-            }
-        }
 
         /*Close the output ports*/
         CloseOutputPorts(1);
         CloseOutputPorts(2);
 		
     } // run
+        
+    void  FilterFrame(Frame frame)
+    {
+        final Integer temperatureParamID = 4;
+       
+        Measurement m = frame.find(temperatureParamID);
+        
+        Double tempF   = Double.longBitsToDouble(m.paramVal);
+        Double tempC   = (tempF -32)*5/9;
+        
+        /*Convert to meters*/
+        m.paramVal = Double.doubleToRawLongBits(tempC);
+        
+        /*Output through output port 1*/
+        PipeOutFrame(frame, 1);
+        
+        /*Print frame for debugging*/
+        DbgTrace(PrintFrame(frame));
+
+    }            
         
     public void ProcessInputChannel(int portNum)
     {
@@ -131,9 +114,11 @@ public class TimeAlignFilter extends FilterFramework
                     /*This is a new frame, insert the previous frame in the list. Dont do it if it is the very first frame*/
                     if(!isFirstFrame)
                     {
-                        /*Insert the new frame in the frame list*/
-                        DtFrmList.add(f);
+                        /*Filter the new frame*/
+                        FilterFrame(f);
+                        
                         f = new Frame(portNum);
+                        
                     }
                     isFirstFrame = false;
                 }
@@ -142,15 +127,15 @@ public class TimeAlignFilter extends FilterFramework
                 /*Add the measurement to the frame*/
                 f.add(m);
             }
-                
-            catch (EndOfStreamException e)
+            catch (FilterFramework.EndOfStreamException e)
             {
-                /*Insert Final frame in the frame list*/
-                DtFrmList.add(f);
+                /*Filter the final frame*/
+                FilterFrame(f);
+
                 
                 CloseInputPorts(portNum);
 
-                DbgTrace( "\n" + this.getName() + "::Time Align Filter Exiting; bytes read from channel 1: " + bytesread + " bytes Written:" + byteswritten);
+                DbgTrace( "\n" + this.getName() + "::Temperature Filter Exiting; bytes read from channel 1: " + bytesread + " bytes Written:" + byteswritten);
                 break;
             } // catch
 
@@ -171,6 +156,13 @@ public class TimeAlignFilter extends FilterFramework
         {
             WriteFilterOutputPort(outPort, bufferArray[i]);
         }
+    }
+    
+    ByteBuffer Serialize(String str)
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(str.length());
+        buffer.put(str.getBytes());
+        return (buffer);
     }
     
     String PrintFrame(Frame frame)
@@ -230,16 +222,14 @@ public class TimeAlignFilter extends FilterFramework
             }
         }
         
-        outputStr = frame.getSourceChannel()+ "\t" + 
-                    tsStr                   + "\t" + 
-                    velStr                  + "\t" + 
+        outputStr = tsStr                   + "\t" + 
+                    velStr                  + "\t\t" + 
                     altStr                  + "\t" + 
                     pressStr                + "\t" + 
                     tempStr                 + "\t" + 
-                    attStr;
+                    attStr                  + "\n";
         
         DbgTrace(outputStr);
-	DbgTrace( "\n" );
         
         return(outputStr);
     }

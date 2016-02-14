@@ -5,7 +5,7 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
-*       1.1 N.Hoskeri, Feb,07,2016 - Modified to set up pipe and filter configure for System C
+*       1.1 Feb,07,2016 - Modified to set up pipe and filter configure for System C (NLH)
 *
 * Description:
 *
@@ -18,18 +18,20 @@
 ******************************************************************************************************************/
 import java.util.Properties;
 import java.io.*;
-import java.nio.ByteBuffer;
 
 public class Plumber
 {
    public static void main( String argv[])
    {
-        String cfgPropFile      = System.getProperty("user.dir") + "/config.properties";
-        //String cfgPropFile      = "W:/usr/nhoskeri/personal/TEP/course/17-655/Assignment/A1/SystemD/src/config.properties";
+       System.out.println("Plumber::Process Start\n"); 
+       
+       String cfgPropFile      = System.getProperty("user.dir") + "/config.properties";
+        //String cfgPropFile      = "W:/usr/nhoskeri/personal/TEP/course/17-655/Assignment/A1/SystemF/src/config.properties";
         Properties configProp   = LoadPropfile(cfgPropFile);
        
-
-      
+       
+        System.out.println("Plumber::Loading config file " + cfgPropFile + "\n"); 
+        
         /****************************************************************************
         * Get the source and sink names from the property file
         ****************************************************************************/
@@ -55,24 +57,28 @@ public class Plumber
 
         TimeAlignFilter TimeAlgnFlt = new TimeAlignFilter();
         
+        TemperatureFilter TempFlt   = new TemperatureFilter();        
+        
         AltitudeFilter AltFlt       = new AltitudeFilter();
         
         PressureFilter PressFlt     = new PressureFilter();
 
+        
         SinkFilter SnkFilter1       = new SinkFilter();
         SnkFilter1.SetSink(Sink_1_fileName);
+        Integer[] paramIdOut1 = {0,4,1,2,3,5};  /*Select which measurement IDs to be output*/
+        SnkFilter1.configParams(paramIdOut1);
 
         SinkFilter SnkFilter2       = new SinkFilter();
         SnkFilter2.SetSink(Sink_2_fileName);
+        Integer[] paramIdOut2 = {0,3}; /*Select which measurement IDs to be output*/
+        SnkFilter2.configParams(paramIdOut2);
 
         SinkFilter SnkFilter3       = new SinkFilter();
         SnkFilter3.SetSink(Sink_3_fileName);
+        Integer[] paramIdOut3 = {0,4,2,3}; /*Select which measurement IDs to be output*/
+        SnkFilter3.configParams(paramIdOut3);
 
-        
-        //TimeAlgnFlt.DbgTraceOn      = true;
-        //AltFlt.DbgTraceOn           = true;
-        PressFlt.DbgTraceOn         = true;
-        
         /****************************************************************************
         * Here we connect the filters starting with the sink filter (Filter 1) which
         * we connect to Filter2 the middle filter. Then we connect Filter2 to the
@@ -87,7 +93,9 @@ public class Plumber
 
         SnkFilter1.Connect(AltFlt,      2, 1);          /*Connect Snkfilter11 input port 1 to Altitude Filter ouput port 2*/
 
-        AltFlt.Connect(TimeAlgnFlt,     1, 1);          /*Connect Altitude filter 1 input port to Time Align Filter output port 1*/
+        AltFlt.Connect(TempFlt,         1, 1);          /*Connect Altitude filter 1 input port to Temperature Filter output port 1*/
+        
+        TempFlt.Connect(TimeAlgnFlt,    1, 1);          /*Connect Temperature filter 1 input port to Time Align Filter output port 1*/
 
         TimeAlgnFlt.Connect(SrcFilter1, 1, 1);          /*Connect Time Aligh filter input port 1 to Source Filter 1 ouput port 1*/
 
@@ -101,12 +109,12 @@ public class Plumber
         SrcFilter1.start();
         SrcFilter2.start();
         TimeAlgnFlt.start();
+        TempFlt.start();
         AltFlt.start();
         PressFlt.start();
         SnkFilter1.start();
         SnkFilter2.start();
         SnkFilter3.start();
-        
         
    } // main
    
