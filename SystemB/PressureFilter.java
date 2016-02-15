@@ -8,14 +8,7 @@
 *
 * Description:
 *
-* This class serves as an example for using the SinkFilterTemplate for creating a sink filter. This particular
-* filter reads some input from the filter's input port and does the following:
-*
-*	1) It parses the input stream and "decommutates" the measurement ID
-*	2) It parses the input steam for measurments and "decommutates" measurements, storing the bits in a long word.
-*
-* This filter illustrates how to convert the byte stream data from the upstream filterinto useable data found in
-* the stream: namely time (long type) and measurements (double type).
+* This class support the Pressure Filter functionality
 *
 *
 * Parameters: 	None
@@ -24,12 +17,8 @@
 *
 ******************************************************************************************************************/
 import java.util.*;						// This class is used to interpret time words
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;		// This class is used to format and write time in a string format.
 
 public class PressureFilter extends FilterFramework
 {
@@ -58,8 +47,6 @@ public class PressureFilter extends FilterFramework
 		//Takes the data from DataFrame and sends it through the pipe
 		public void pipeOutput()
 		{			
-			Boolean wildPoint;//stores whether a frame has PSI wild point or not
-			Double wildPSI;
 			
 			for (DataFrame frame : frameList)
 			{

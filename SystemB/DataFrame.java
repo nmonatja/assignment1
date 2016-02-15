@@ -1,4 +1,22 @@
-import java.util.Calendar;
+/******************************************************************************************************************
+* File:DataFrame.java
+* Course: 17655
+* Project: Assignment 1
+* Copyright: Copyright (c) 2003 Carnegie Mellon University
+* Versions:
+*	1.0 November 2008 - Sample Pipe and Filter code (ajl).
+*
+* Description:
+*
+* This class support the Pressure Filter functionality, it stores data streams as frames.
+* This is used for extrapolating wild points.
+*
+*
+* Parameters: 	None
+*
+* Internal Methods: None
+*
+******************************************************************************************************************/
 
 
 public class DataFrame {

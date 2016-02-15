@@ -1,5 +1,5 @@
 /******************************************************************************************************************
-* File:SinkFilter.java
+* File:WildPointFilter.java
 * Course: 17655
 * Project: Assignment 1
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
@@ -8,14 +8,7 @@
 *
 * Description:
 *
-* This class serves as an example for using the SinkFilterTemplate for creating a sink filter. This particular
-* filter reads some input from the filter's input port and does the following:
-*
-*	1) It parses the input stream and "decommutates" the measurement ID
-*	2) It parses the input steam for measurments and "decommutates" measurements, storing the bits in a long word.
-*
-* This filter illustrates how to convert the byte stream data from the upstream filterinto useable data found in
-* the stream: namely time (long type) and measurements (double type).
+* This class support the Pressure Filter functionality - it formats wild points and prints them out
 *
 *
 * Parameters: 	None
@@ -29,7 +22,6 @@ import java.text.SimpleDateFormat;		// This class is used to format and write ti
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.NumberFormat;
 
 public class WildPointsFilter extends FilterFramework
 {
@@ -52,9 +44,7 @@ public class WildPointsFilter extends FilterFramework
 		int bytesread = 0;				// This is the number of bytes read from the stream
 
 		long measurement;				// This is the word used to store all measurements - conversions are illustrated.
-		long alt = 0;
 		long pressure = 0;
-		long temperature = 0;
 		int id;							// This is the measurement id
 		int i;							// This is a loop counter
 		String output = null;
