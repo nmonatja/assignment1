@@ -1,13 +1,14 @@
 /******************************************************************************************************************
-* File:TempuratureFilter.java
+* File:TemperatureFilter.java
 * Course: 17655
 * Project: Assignment 1
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
+*   2.0 Feb 2016 - Temp Filter
 *
 * Description:
-* Based on MiddleFilter from the Sample
+* Based on MiddleFilter from the Sample, this is the temperature filter from System A
 *
 * Parameters: 		None
 *

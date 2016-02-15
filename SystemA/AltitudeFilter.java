@@ -5,6 +5,7 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
+*   2.0 Feb 2016 - AltitudeFilter 
 *
 * Description:
 * Based on MiddleFilter from the Sample

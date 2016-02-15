@@ -5,13 +5,13 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
+*   2.0 Feb 2016 - Updated for System A, added 
 *
 * Description:
 *
-* This class serves as an example to illstrate how to use the PlumberTemplate to create a main thread that
-* instantiates and connects a set of filters. This example consists of three filters: a source, a middle filter
-* that acts as a pass-through filter (it does nothing to the data), and a sink filter which illustrates all kinds
-* of useful things that you can do with the input stream of data.
+* This class serves as a Plumbler connecter to create a main thread that instantiates and connects a set
+* of filters. This example consists of four filters: a source, a temperature filter, an altitude filter,
+* and a sink filter which formats and prints out the data.
 *
 * Parameters: 		None
 *

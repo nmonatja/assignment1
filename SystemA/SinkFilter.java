@@ -5,17 +5,16 @@
 * Copyright: Copyright (c) 2003 Carnegie Mellon University
 * Versions:
 *	1.0 November 2008 - Sample Pipe and Filter code (ajl).
+*   2.0 Feb 2016 - SinkFilter formats and outputs data for System A
 *
 * Description:
 *
-* This class serves as an example for using the SinkFilterTemplate for creating a sink filter. This particular
+* This class is a sink filter for System A. This particular
 * filter reads some input from the filter's input port and does the following:
 *
 *	1) It parses the input stream and "decommutates" the measurement ID
 *	2) It parses the input steam for measurments and "decommutates" measurements, storing the bits in a long word.
-*
-* This filter illustrates how to convert the byte stream data from the upstream filterinto useable data found in
-* the stream: namely time (long type) and measurements (double type).
+*   3) Write the data into a output file OutputA.dat
 *
 *
 * Parameters: 	None
@@ -37,8 +36,7 @@ public class SinkFilter extends FilterFramework
     {
 		/************************************************************************************
 		*	TimeStamp is used to compute time using java.util's Calendar class.
-		* 	TimeStampFormat is used to format the time value so that it can be easily printed
-		*	to the terminal.
+		* 	TimeStampFormat is used to format the time value 
 		*************************************************************************************/
 
 		Calendar TimeStamp = Calendar.getInstance();
@@ -146,7 +144,7 @@ public class SinkFilter extends FilterFramework
 					} // if
 
 					/****************************************************************************
-					// Here we pick up a measurement (ID = 3 in this case), but you can pick up
+					// Here we pick up a measurement, but you can pick up
 					// any measurement you want to. All measurements in the stream are
 					// decommutated by this class. Note that all data measurements are double types
 					// This illustrates how to convert the bits read from the stream into a double
