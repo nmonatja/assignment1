@@ -52,7 +52,7 @@ public class WildPointsFilter extends FilterFramework
 		try 
 		{	
 
-			BufferedWriter writer = new BufferedWriter( new FileWriter( "Wildpoints.dat"));
+			BufferedWriter writer = new BufferedWriter( new FileWriter( "../DataSets/Wildpoints.dat"));
 
 			/*************************************************************
 			*	First we announce to the world that we are alive...

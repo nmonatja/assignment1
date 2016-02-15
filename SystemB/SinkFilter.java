@@ -65,7 +65,7 @@ public class SinkFilter extends FilterFramework
 		try 
 		{	
 
-			BufferedWriter writer = new BufferedWriter( new FileWriter( "OutputB.dat"));
+			BufferedWriter writer = new BufferedWriter( new FileWriter( "../DataSets/OutputB.dat"));
 
 			/*************************************************************
 			*	First we announce to the world that we are alive...
