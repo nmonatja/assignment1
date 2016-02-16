@@ -21,7 +21,9 @@ Steps to install and run the code:
 5. To re-compile the code for a system,
 
     a. Open a command window and change directory to the system folder (SystemA or SystemB or SystemC)
+	
     b. Ensure java/bin is in the system PATH
+	
     c. Execute command  "javac *.java"
 
 6. To run the each application execute the command "java Plumber" in the system folder
