@@ -16,7 +16,7 @@ Steps to install and run the code:
 
 3. The source code (.java files) and the compiled code (.class) for each of the systems will be located in these system sub-folders
 
-4. The data files for each of the systems will be located in the DataSets sub-folder under each system folder
+4. The data files for each of the systems will be located in the main DataSets folder
 
 5. To re-compile the code for a system,
 
@@ -28,7 +28,7 @@ Steps to install and run the code:
 
 6. To run the each application execute the command "java Plumber" in the system folder
 
-7. The output data files will be created under the DataSets sub-folder, under each system folder
+7. The output data files will be created under the main DataSets folder
 
 
 
